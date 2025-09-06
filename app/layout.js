@@ -4,7 +4,7 @@ import { Cairo } from 'next/font/google'
 import { GlobalStateProvider } from '../globalState'
 
 const cairo = Cairo({
-  subsets:['latin'],
+  subsets: ['latin', 'arabic'],
   weight:['400','700'],
   display:'swap'
 })

@@ -66,16 +66,17 @@ const Email = () => {
             .sort((a, b) => b.date.seconds - a.date.seconds)
             .map((email,index) => (
               <div onClick={() => openEmail(email)} key={index} className='single-item'>
-                <h5 className={!email.seen ? 'not-seen' : undefined}>{email.sender}</h5>
-                <h5 style={{width:'300px'}} className={!email.seen ? 'not-seen' : undefined}>
-                  {email.messageBody.length > 50 ? `${email.messageBody.slice(0, 50)}...` : email.messageBody}
+                <h5 style={{width:'300px'}} className={!email?.seen ? 'not-seen' : undefined}>
+                  {email?.sender?.length > 50 ? `${email?.sender?.slice(0, 50)}...` : email?.sender}
                 </h5>
-                <h5 className={!email.seen ? 'not-seen' : undefined}>{formatDate(email.date)}</h5>             
+                <h5 style={{width:'500px'}} className={!email?.seen ? 'not-seen' : undefined}>
+                  {email?.messageBody?.length > 100 ? `${email?.messageBody?.slice(0, 100)}...` : email?.messageBody}
+                </h5>
+                <h5 style={{width:'200px'}} className={!email?.seen ? 'not-seen' : undefined}>{formatDate(email.date)}</h5>             
               </div>
           ))}
         </div>
       )}
-      
     </div>
   )
 }

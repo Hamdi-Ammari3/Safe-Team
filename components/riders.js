@@ -515,20 +515,22 @@ const Riders = () => {
   //Render rider filter
   const renderStudentTitles = () => (
     <div className='students-section-inner-titles'>
-      <div className='students-section-inner-title'>
+      <div className='students-section-inner-title' style={{width:'300px'}}>
         <input 
           onChange={handleNameFilterChange} 
           value={nameFilter}
           placeholder='الاسم' 
           type='text' 
+          style={{width:'200px'}}
         />
       </div>
-      <div className='students-section-inner-title'>
+      <div className='students-section-inner-title' style={{width:'450px'}}>
         <input 
           onChange={handleDestinationChange} 
           value={destinationFilter}
           placeholder='الوجهة' 
           type='text' 
+          style={{width:'300px'}}
         />
       </div>
       <div className='students-section-inner-title'>
@@ -539,8 +541,12 @@ const Riders = () => {
           type='text' 
         />
       </div>
-      <div className='students-section-inner-title' style={{width:'200px'}}>
-        <select onChange={handleHasDriverChange} value={hasDriverFilter}>
+      <div className='students-section-inner-title' style={{width:'150px'}}>
+        <select 
+          onChange={handleHasDriverChange} 
+          value={hasDriverFilter}
+          style={{width:'100px'}}
+        >
         <option value=''>لديه خط</option>
           <option value={true}>نعم</option>
           <option value={false}>لا</option>
@@ -555,19 +561,19 @@ const Riders = () => {
         <div className='students-section-inner'>
           {renderAddNewLineSection()}
           {renderStudentTitles()}
-          <div className='all-items-list'>
+          <div>
             {filteredRiders.map((rider, index) => (
               <div key={index} onClick={() => selectRider(rider)} className='single-item' >
-                <div>
+                <div style={{width:'300px'}}>
                   <h5>{rider.full_name} {rider.family_name}</h5>                         
                 </div>                
-                <div>
+                <div style={{width:'450px'}}>
                   <h5>{rider.destination}</h5>
                 </div>
                 <div>
                   <h5>{rider.home_address}</h5>
                 </div>
-                <div style={{width:'200px'}}>
+                <div style={{width:'150px'}}>
                   <h5 className={rider.line_id ? 'student-has-driver' : 'student-without-driver'}>{rider.line_id ? 'نعم' : 'لا'}</h5>
                 </div>
               </div>

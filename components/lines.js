@@ -1717,26 +1717,28 @@ const Lines = () => {
 
   const renderLinesTitles = () => (
     <div className='students-section-inner-titles'>
-      <div className='students-section-inner-title'>
+      <div className='students-section-inner-title' style={{width:'350px'}}>
         <input 
           onChange={handleDriverNameChange} 
           name='line_name'
           value={lineDriverNameFilter}
           placeholder='السائق' 
           type='text' 
+          style={{width:'250px'}}
         />
       </div>
-      <div className='students-section-inner-title'>
+      <div className='students-section-inner-title' style={{width:'500px'}}>
         <input 
           onChange={handleDestinationChange} 
           name='line_destination'
           value={lineDestinationFilter}
           placeholder='الوجهة' 
           type='text' 
+          style={{width:'350px'}}
         />
       </div>
-      <div className='students-section-inner-title'>
-        <div className='driver-rating-box'>
+      <div className='students-section-inner-title' style={{width:'200px'}}>
+        <div className='driver-rating-box' style={{width:'150px'}}>
           <button onClick={handleSortByLowestRiders}>
             <FaCaretDown 
               size={18} 
@@ -1773,7 +1775,7 @@ const Lines = () => {
               const driver = drivers.find((d) => d.id === line.driver_id);
               return (
                 <div key={index} onClick={() => setSelectedLine(line)} className='single-item'>
-                  <div>
+                  <div style={{width:'350px'}}>
                     {driver ? (
                       <h5>
                         {driver?.full_name} {driver?.family_name}
@@ -1782,10 +1784,10 @@ const Lines = () => {
                       <h5>لا يوجد سائق</h5>
                     )}
                   </div>
-                  <div>
+                  <div style={{width:'500px'}}>
                     <h5>{line.destination}</h5>
                   </div>
-                  <div>
+                  <div style={{width:'200px'}}>
                     <h5>{line.riders.length}</h5>
                   </div>
                   <div style={{width:'200px'}}>

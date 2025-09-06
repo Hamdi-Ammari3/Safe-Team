@@ -48,7 +48,7 @@ const Login = () => {
     <div className='login-container'>
       <div className='login-container-box'>
         <div className='form-title-box'>
-          <h2>Sayartech</h2>
+          <h2>SAFE</h2>
         </div>
         {error && <p style={{color:'red'}}>{error}</p>}
         <div className='form-box'>

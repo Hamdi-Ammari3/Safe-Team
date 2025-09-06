@@ -2,7 +2,6 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: sans-serif;
 }
 #app-container{
     margin: 0;
@@ -319,7 +318,7 @@
     justify-content: center;
 }
 .white_card-section-container{
-  width:73vw;
+  width:75vw;
   height:80vh;
   margin-top: 10px;
   background-color: #fff;
@@ -329,7 +328,7 @@
   overflow-x: hidden;
 }
 .students-section-inner-titles{
-  width:73vw;
+  width:75vw;
   height: 50px;
   display: flex;
   flex-direction: row-reverse;
@@ -965,7 +964,7 @@
   align-items: center;
 }
 .single-item,.daily-status-line-single-item{
-  width:73vw;
+  width:75vw;
   height: 40px;
   display: flex;
   flex-direction: row-reverse;
@@ -1122,8 +1121,8 @@
     gap: 5px;
   }
   .line-subs-amount-item{
-    width: 130px;
-    height: 40px;
+    width: 140px;
+    height: 50px;
     border:1px solid #c9c9c9;
     border-radius: 10px;
     display:flex;

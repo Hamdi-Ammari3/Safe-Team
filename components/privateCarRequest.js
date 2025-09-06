@@ -84,7 +84,7 @@ const PrivateCarRequest = () => {
             .slice()
             .sort((a, b) => b.request_send_date.seconds - a.request_send_date.seconds)
             .map((request,index) => (
-              <div key={index} onClick={() => openRequest(request)} className='single-item'>
+              <div key={index} onClick={() => openRequest(request)} className='single-item' style={{padding:'0 50px'}}>
                 <h5 className={!request.seen ? 'not-seen':undefined}>{request.sender}</h5>
                 <h5 className={!request.seen ? 'not-seen':undefined}>{formatDate(request.request_send_date)}</h5>
               </div>
