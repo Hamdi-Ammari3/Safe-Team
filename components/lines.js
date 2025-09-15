@@ -1781,7 +1781,7 @@ const Lines = () => {
                         {driver?.full_name} {driver?.family_name}
                       </h5>
                     ) : (
-                      <h5>لا يوجد سائق</h5>
+                      <h5>--</h5>
                     )}
                   </div>
                   <div style={{width:'500px'}}>
@@ -2546,31 +2546,3 @@ const Lines = () => {
 }
 
 export default Lines
-
-/*
-                                  {transferType === 'today' && (
-                                    <div className="switch-line-mode-toggle">
-                                      <div>
-                                        <input
-                                          type="checkbox"
-                                          checked={tripPhases.first}
-                                          onChange={() =>
-                                            setTripPhases(prev => ({ ...prev, first: !prev.first }))
-                                          }
-                                        />
-                                        <h5>رحلة الذهاب</h5>
-                                      </div>
-                                      <div>
-                                        <input
-                                          type="checkbox"
-                                          checked={tripPhases.second}
-                                          onChange={() =>
-                                            setTripPhases(prev => ({ ...prev, second: !prev.second }))
-                                          }
-                                          style={{ marginRight: '10px' }}
-                                        />
-                                        <h5>رحلة العودة</h5>
-                                      </div>
-                                    </div>
-                                  )}
-*/

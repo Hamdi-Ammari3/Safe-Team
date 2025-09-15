@@ -31,8 +31,7 @@ const Dashboard = () => {
     } else {
       setIsAuthenticated(true); // Allow access to the dashboard
     }
-  }, []);
-
+  }, [])
 
   if (!isAuthenticated) {
     return (
@@ -47,7 +46,6 @@ const Dashboard = () => {
       </div>   
   )}
 
-  
   // Function to handle select section
   const handleSectionSelect = (section) => {
     setActiveSection(section)

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { addDoc, collection } from "firebase/firestore";
 import { DB } from "../../firebaseConfig";
 import ClipLoader from "react-spinners/ClipLoader"
+import Image from 'next/image'
+import logo_image from '../../images/safe-logo.png'
 
 const DeleteAccountRequest = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -41,14 +43,25 @@ const DeleteAccountRequest = () => {
     <div className='login-container'>
       <div className='login-container-box'>
         <div className='form-title-box'>
-          <h2>Sayartech</h2>
+          <Image
+            src={logo_image}
+            width={80}
+            height={80}
+            alt='logo image'
+            style={{objectFit:'contain'}}
+          />
         </div>
         {error && <p style={{ color: "red" }}>{error}</p>}
         {success && <p style={{ color: "green" }}>{success}</p>}
         <div className='form-box'>
           <form className='form'>
             <input placeholder='رقم الهاتف' value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)}/>
-            <textarea placeholder='سبب مسح الحساب' value={reason} onChange={(e) => setReason(e.target.value)}/>
+            <textarea 
+              placeholder='سبب مسح الحساب' 
+              value={reason} 
+              onChange={(e) => setReason(e.target.value)}
+              style={{width:'250px'}}
+            />
             {loading ? (
               <div style={{ width:'250px',padding:'12px 0',backgroundColor:'#955BFE',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center'}}>
                 <ClipLoader

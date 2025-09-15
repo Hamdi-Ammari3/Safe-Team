@@ -12,7 +12,7 @@ const AddBalance = () => {
     const [amountToAdd, setAmountToAdd] = useState('')
     const [addingAmountLoading, setAddingAmountLoading] = useState(false)
 
-    const handleSearch = async () => {
+    const handleSearchs = async () => {
         setError('')
         setLoading(true)
         setUserData(null)
@@ -37,6 +37,65 @@ const AddBalance = () => {
             setError('حدث خطأ أثناء البحث')
         } finally {
             setLoading(false)
+        }
+    }
+
+    const handleSearch = async () => {
+        try {
+            setError('')
+            setLoading(true)
+            setUserData(null)
+
+            if (!userType) {
+                setError('يرجى اختيار نوع المستخدم')
+                return
+            }
+
+            if (userType === 'driver') {
+                const driverRef = doc(DB, 'drivers', searchId.trim())
+                const driverSnap = await getDoc(driverRef)
+                if (driverSnap.exists()) {
+                    setUserData({ id: driverSnap.id, ...driverSnap.data(), collection: 'drivers' });
+                } else {
+                    setError('السائق غير موجود');
+                }
+            } else if (userType === 'rider') {
+                if (searchId.startsWith('user_')) {
+                    // It's a userId (Clerk)
+                    const userRef = doc(DB, 'users', searchId.trim());
+                    const userSnap = await getDoc(userRef);
+                    if (userSnap.exists()) {
+                        setUserData({ id: userSnap.id, ...userSnap.data(), collection: 'users' });
+                    } else {
+                        setError('المستخدم غير موجود');
+                    }
+                } else {
+                    // It's a riderId (Firestore generated)
+                    const riderRef = doc(DB, 'riders', searchId.trim());
+                    const riderSnap = await getDoc(riderRef);
+                    if (riderSnap.exists()) {
+                        const riderData = riderSnap.data();
+                        if (!riderData.user_doc_id) {
+                            setError('لا يوجد مستخدم مرتبط بهذا الراكب');
+                            return;
+                        }
+                        const userRef = doc(DB, 'users', riderData.user_doc_id);
+                        const userSnap = await getDoc(userRef);
+                        if (userSnap.exists()) {
+                            setUserData({ id: userSnap.id, ...userSnap.data(), collection: 'users' });
+                        } else {
+                            setError('المستخدم المرتبط غير موجود');
+                        }
+                    } else {
+                        setError('الراكب غير موجود');
+                    }
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            setError('حدث خطأ أثناء البحث');
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -129,7 +188,7 @@ const AddBalance = () => {
                 {userData && (
                     <div className="user_balance_main_user_info">
                         <div>
-                            <h5 style={{ fontWeight: 'normal' }}>الاسم</h5>
+                            <h5 style={{ fontWeight: 'normal' }}>صاحب الحساب</h5>
                             <h5>
                                 {userType === 'rider'
                                 ? `${userData.user_full_name} ${userData.user_family_name}`

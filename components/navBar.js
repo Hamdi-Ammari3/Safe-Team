@@ -1,6 +1,8 @@
 import React,{useEffect,useState} from 'react'
 import { CiLogout } from "react-icons/ci"
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
+import logo_image from '../images/safe-logo.png'
 import ClipLoader from "react-spinners/ClipLoader"
 
 const Navbar = () => {
@@ -30,7 +32,13 @@ const Navbar = () => {
   return (
     <div className='navbar'>
         <div className='navbar_logo_div'>
-          <h2>Safe</h2>
+          <Image
+            src={logo_image}
+            width={50}
+            height={50}
+            alt='logo image'
+            style={{objectFit:'contain'}}
+          />
         </div>
         <div className='navbar_user_box'>
           <h5>{userName}</h5>

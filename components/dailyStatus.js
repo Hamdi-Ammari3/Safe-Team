@@ -346,7 +346,7 @@ const DailyStatus = () => {
         mapRef.current = map; // Store the map instance
     };
 
-   useEffect(() => {
+    useEffect(() => {
         let unsubscribeFn;
 
         const trackDriver = async () => {
@@ -611,23 +611,23 @@ const DailyStatus = () => {
                                                     <h5 style={{fontWeight:'bold'}}>{selectedLine?.todayLine?.first_phase?.phase_finishing_time ||'--'}</h5>
                                                 </div>
                                                 <div className= "line-student-dropdown-open-riders-list">
-                                                {selectedLine?.todayLine?.first_phase?.riders.map((rider) => (
-                                                    <div key={rider.id} className='trip-dropdown-item'>
-                                                        <h5>{rider.name} {rider.family_name}</h5>
+                                                {selectedLine?.todayLine?.first_phase?.riders?.map((rider) => (
+                                                    <div key={rider?.id} className='trip-dropdown-item'>
+                                                        <h5>{rider?.name} {rider?.family_name}</h5>
                                                         <h5>-</h5>
-                                                        <h5>{rider.phone_number}</h5>
+                                                        <h5>{rider?.phone_number}</h5>
                                                         <h5>-</h5>
-                                                        <h5>{rider.id}</h5>     
-                                                        {rider.checked_at_home && (
+                                                        <h5>{rider?.id}</h5>     
+                                                        {rider?.checked_at_home && (
                                                             <>
                                                                 <h5>-</h5>
-                                                                <h5 style={{fontWeight:'bold'}}>{rider.picked_up_time}</h5>
+                                                                <h5 style={{fontWeight:'bold'}}>{rider?.picked_up_time}</h5>
                                                             </>                                                    
                                                         )}                                           
-                                                        {rider.picked_up && (
+                                                        {rider?.picked_up && (
                                                             <MdCheckCircle size={22} color='#328E6E'/>  
                                                         )} 
-                                                        {rider.checked_at_home && !rider.picked_up && (
+                                                        {rider?.checked_at_home && !rider?.picked_up && (
                                                             <IoMdCloseCircle size={22} color='#D64545'/>
                                                         )}                                                 
                                                     </div>
@@ -642,14 +642,14 @@ const DailyStatus = () => {
                                     <div className= "line-student-dropdown-open" style={{height:'53vh'}}>
                                         {selectedLine?.todayLine?.second_phase?.phase_started ? (
                                             <>
-                                                {selectedLine?.todayLine?.second_phase?.riders.map((rider) => (
-                                                    <div key={rider.id} className='trip-dropdown-item'>
-                                                        <h5>{rider.name} {rider.family_name}</h5>
+                                                {selectedLine?.todayLine?.second_phase?.riders?.map((rider) => (
+                                                    <div key={rider?.id} className='trip-dropdown-item'>
+                                                        <h5>{rider?.name} {rider?.family_name}</h5>
                                                         <h5>-</h5>
-                                                        <h5>{rider.phone_number}</h5>
+                                                        <h5>{rider?.phone_number}</h5>
                                                         <h5>-</h5>
-                                                        <h5>{rider.id}</h5>
-                                                        {rider.dropped_off && (
+                                                        <h5>{rider?.id}</h5>
+                                                        {rider?.dropped_off && (
                                                             <MdCheckCircle size={22} color='green'/>  
                                                         )} 
                                                     </div>
@@ -669,14 +669,14 @@ const DailyStatus = () => {
                                 </div>
                             ) : (
                                 <>
-                                {((lineTripPhase === 'first' && selectedLine.lineStatus === 'رحلة الذهاب بدأت') ||
-                                (lineTripPhase === 'second' && selectedLine.lineStatus === 'رحلة العودة بدأت')) && selectedLine.driver?.current_location ? (
+                                {((lineTripPhase === 'first' && selectedLine?.lineStatus === 'رحلة الذهاب بدأت') ||
+                                (lineTripPhase === 'second' && selectedLine?.lineStatus === 'رحلة العودة بدأت')) && selectedLine.driver?.current_location ? (
                                     <div>
                                         <GoogleMap
                                             mapContainerStyle={{ width: "450px", height: "400px" }}
                                             center={{
-                                                lat: selectedLine.driver?.current_location?.latitude,
-                                                lng: selectedLine.driver?.current_location?.longitude
+                                                lat: selectedLine?.driver?.current_location?.latitude,
+                                                lng: selectedLine?.driver?.current_location?.longitude
                                             }}
                                             zoom={14}
                                             onLoad={handleMapLoad}

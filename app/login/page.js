@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { collection, getDocs, query, where } from "firebase/firestore"
 import { DB } from '../../firebaseConfig'
 import ClipLoader from "react-spinners/ClipLoader"
+import Image from 'next/image'
+import logo_image from '../../images/safe-logo.png'
 
 const Login = () => {
   const [username,setUsername] = useState('')
@@ -31,7 +33,6 @@ const Login = () => {
       if (!querySnapshot.empty) {
         const userData = querySnapshot.docs[0].data();        
         localStorage.setItem('adminLoggedIn', true)
-        localStorage.setItem('adminName', userData.username)
         localStorage.setItem('adminDahboardName', userData.dashboard_name)
         router.push('/')
       } else {
@@ -48,7 +49,13 @@ const Login = () => {
     <div className='login-container'>
       <div className='login-container-box'>
         <div className='form-title-box'>
-          <h2>SAFE</h2>
+          <Image
+            src={logo_image}
+            width={80}
+            height={80}
+            alt='logo image'
+            style={{objectFit:'contain'}}
+          />
         </div>
         {error && <p style={{color:'red'}}>{error}</p>}
         <div className='form-box'>

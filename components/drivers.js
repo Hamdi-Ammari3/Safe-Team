@@ -18,7 +18,7 @@ const Drivers = () => {
 
   const [selectedTab, setSelectedTab] = useState('lines')
   const [driverNameFilter, setDriverNameFilter] = useState('')
-  const [addressFilter, setAddressFilter] = useState('')
+  const [driverPhoneNumber, setDriverPhoneNumber] = useState('')
   const [carTypeFilter, setCarTypeFilter] = useState('')
   const [driverIDFilter, setDriverIDFilter] = useState('')
   const [linesNumberSortDirection, setLinesNumberSortDirection] = useState(null)
@@ -49,8 +49,8 @@ const Drivers = () => {
     // Filter by name
     const matchesName = driverNameFilter === '' || driver.full_name.includes(driverNameFilter)
 
-    //Filter by home address
-    const matchesAddress = addressFilter === '' || driver.home_address.includes(addressFilter)
+    //Filter by phone number
+    const matchesPhoneNumber = driverPhoneNumber === '' || driver.phone_number.includes(driverPhoneNumber)
 
     // Filter by car type
     const matchesCarType = carTypeFilter === '' || driver.car_type === carTypeFilter;
@@ -58,7 +58,7 @@ const Drivers = () => {
     // Filter driver id 
     const matchesID = driverIDFilter === '' || driver.id.includes(driverIDFilter)
 
-    return matchesServiceType && matchesName && matchesAddress && matchesCarType && matchesID;
+    return matchesServiceType && matchesName && matchesPhoneNumber && matchesCarType && matchesID;
   })
     .sort((a, b) => {
       if (selectedTab === 'lines') {
@@ -83,9 +83,9 @@ const Drivers = () => {
     setDriverNameFilter(e.target.value);
   };
 
-  // Handle driver destination change
-  const handleAddressChange = (e) => {
-    setAddressFilter(e.target.value);
+  // Handle driver phone number change
+  const handlePhoneNumberChange = (e) => {
+    setDriverPhoneNumber(e.target.value);
   };
 
   // Filter by driver car type
@@ -103,12 +103,12 @@ const Drivers = () => {
     setLinesNumberSortDirection('asc');
   };
 
-  // Filter drivers by highest lines number
+  // Filter drivers by highest intercity trips number
   const handleSortByHighestTripsNumber = () => {
     setTripsNumberSortDirection('desc');
   };
 
-  // Filter drivers by lowest lines number
+  // Filter drivers by lowest intercity trips number
   const handleSortByLowestTripsNumber = () => {
     setTripsNumberSortDirection('asc');
   };
@@ -285,10 +285,11 @@ const Drivers = () => {
     const confirmDelete = window.confirm("هل تريد بالتأكيد حذف هذا السائق");
     if (!confirmDelete) return;
 
-    setIsDeleting(true);
-
     try {
+      setIsDeleting(true);
       const batch = writeBatch(DB);
+      const driverRef = doc(DB, "drivers", selectedDriver.id);
+      const userRef = doc(DB, "users", selectedDriver.user_doc_id);
 
       // Check if the driver has lines
       if (selectedDriver.lines.length > 0) {
@@ -297,9 +298,13 @@ const Drivers = () => {
         return;
       }
 
-      // Delete the driver document
-      const driverRef = doc(DB, "drivers", selectedDriver.id);
+      // 1. Delete rider document
       batch.delete(driverRef);
+
+      // 2. Remove driver id from user driver_doc
+      batch.update(userRef, {
+        driver_doc:null
+      });
 
       // Commit the batch update
       await batch.commit();
@@ -490,9 +495,9 @@ const Drivers = () => {
             </div>
             <div className='students-section-inner-title'>
               <input
-                onChange={handleAddressChange}
-                value={addressFilter}
-                placeholder='العنوان'
+                onChange={handlePhoneNumberChange} 
+                value={driverPhoneNumber}
+                placeholder='رقم الهاتف' 
                 type='text'
               />
             </div>
@@ -550,7 +555,7 @@ const Drivers = () => {
                   <h5>{driver.full_name} {driver.family_name}</h5>
                 </div>
                 <div>
-                  <h5>{driver.home_address}</h5>
+                  <h5>{driver.phone_number}</h5>
                 </div>
                 <div>
                   <h5>{driver.car_type}</h5>
@@ -666,7 +671,9 @@ const Drivers = () => {
                                   ))}
                                 </>
                               ) : (
-                                <h5 className="no-students">لا يوجد طلاب في هذا الخط</h5>
+                                <div className='student-dropdown-item' style={{justifyContent:'center'}}>
+                                  <h5 className="no-students">لا يوجد طلاب في هذا الخط</h5>
+                                </div>
                               )}
                             </div>
                           </div>

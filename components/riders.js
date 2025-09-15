@@ -1,6 +1,6 @@
 import React,{useState,useEffect} from 'react'
 import Image from 'next/image'
-import { doc,collection,writeBatch,Timestamp,addDoc,arrayUnion,getDoc,setDoc,updateDoc} from "firebase/firestore"
+import { doc,collection,writeBatch,Timestamp,addDoc,arrayUnion,getDoc,setDoc,updateDoc,arrayRemove} from "firebase/firestore"
 import { DB } from '../firebaseConfig'
 import haversine from 'haversine'
 import { useGlobalState } from '../globalState'
@@ -344,6 +344,7 @@ const Riders = () => {
       setIsDeleting(true);
       const batch = writeBatch(DB);
       const riderRef = doc(DB, 'riders', selectedRider.id);
+      const userRef = doc(DB, "users", selectedRider.user_doc_id);
       
       // Check if the rider is still connected to a driver
       if (selectedRider.line_id || selectedRider.driver_id) {
@@ -351,7 +352,14 @@ const Riders = () => {
         return;
       }
 
+      // 1. Delete rider document
       batch.delete(riderRef)
+
+      // 2. Remove rider id from parent user's riders array
+      batch.update(userRef, {
+        riders: arrayRemove({ id:selectedRider.id })
+      });
+
       await batch.commit()
       setSelectedRider(null)
 
@@ -658,16 +666,16 @@ const Riders = () => {
                 </Modal>
               </div>
               <div>
-                <h5 style={{marginLeft:'10px',fontWeight:'bold'}}>الاشتراك الشهري</h5>
-                <h5 style={{marginLeft:'5px'}}>
+                <h5 style={{marginLeft:'10px'}}>الاشتراك الشهري</h5>
+                <h5 style={{marginLeft:'5px',fontWeight:'bold'}}>
                   {selectedRider.line_id ? Number(selectedRider.company_commission + selectedRider.driver_commission).toLocaleString('en-US') : '0'}
                 </h5>
                 <h5 style={{marginLeft:'10px'}}>دينار</h5>
               </div>
               {selectedRider?.driver_id && selectedRider?.service_period && (
                 <div>
-                  <h5 style={{marginLeft:'10px',fontWeight:'bold'}}>صلوحية الاشتراك</h5>
-                  <h5>
+                  <h5 style={{marginLeft:'10px'}}>اشتراك صالح الى غاية</h5>
+                  <h5 style={{fontWeight:'bold'}}>
                     {new Date(
                       selectedRider.service_period.end_date.seconds * 1000
                     ).toLocaleDateString('en-GB')}
@@ -675,8 +683,8 @@ const Riders = () => {
                 </div>
               )}
               <div>
-                <h5 style={{marginLeft:'10px',fontWeight:'bold'}}>المعرف الخاص</h5>
-                <h5>{selectedRider.id}</h5>
+                <h5 style={{marginLeft:'10px'}}>المعرف الخاص</h5>
+                <h5 style={{fontWeight:'bold'}}>{selectedRider.id}</h5>
               </div>
               <div>
                 <h5 style={{marginLeft:'3px'}}>حذف الحساب</h5>
