@@ -6,13 +6,14 @@ import { DB } from './firebaseConfig';
 const GlobalStateContext = createContext();
 
 const initialState = {
+  users:[],
   riders:[],
-  lines: [],
-  intercityTrips: [],
-  drivers: [],
+  lines:[],
+  intercityTrips:[],
+  drivers:[],
   destinations:[],
-  emails: [],
-  privateCarRequests: [],
+  emails:[],
+  privateCarRequests:[],
   unseenEmailsCount: 0,
   unseenPrivateCarRequestsCount: 0,
   loading: true,
@@ -42,6 +43,14 @@ export const GlobalStateProvider = ({ children }) => {
   const [state, dispatch] = useReducer(globalStateReducer, initialState);
 
   useEffect(() => {    
+    const unsubscribeUsers = onSnapshot(collection(DB, 'users'), (snapshot) => {
+      const users = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      dispatch({
+        type: 'FETCH_SUCCESS',
+        payload: { users },
+      });
+    });
+
     const unsubscribeRiders = onSnapshot(collection(DB, 'riders'), (snapshot) => {
       const riders = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       dispatch({
@@ -102,6 +111,7 @@ export const GlobalStateProvider = ({ children }) => {
 
     // Cleanup listeners on unmount
     return () => {
+      unsubscribeUsers();
       unsubscribeRiders();
       unsubscribeDrivers();
       unsubscribeLines();
