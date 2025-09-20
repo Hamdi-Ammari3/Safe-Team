@@ -3,7 +3,6 @@ import { useGlobalState } from '../globalState'
 import { PiVanLight } from "react-icons/pi"
 import { FaRegUser } from "react-icons/fa"
 import { LuMapPin } from "react-icons/lu"
-import { IoBus } from "react-icons/io5"
 import { GrDirections } from "react-icons/gr"
 import { PiStudent } from "react-icons/pi";
 import ClipLoader from "react-spinners/ClipLoader"

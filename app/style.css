@@ -1623,19 +1623,37 @@
     gap: 10px;
   }
   .creating-new-line-form-timing{
-    width: 300px;
+    width: 420px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    position: relative;
   }
-  .creating-new-line-form-timing > div{
+  .creating-new-line-form-timing-box{
     width: 300px;
     display: flex;
     flex-direction: row-reverse;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
+  }
+  .copy-day-timing-to-table{
+    width: 55px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 0px;
+    left:0px;
+  }
+  .copy-day-timing-to-table > button {
+    width: 55px;
+    height: 25px;
+    background-color: #16B1FF;
+    color: white;
+    border: none;
+    border-radius: 7px;
   }
   .confirm-edit-time-table{
     width: 100%;

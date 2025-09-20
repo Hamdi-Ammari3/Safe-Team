@@ -290,8 +290,6 @@ const Lines = () => {
         standard_company_commission: Number(lineCompanySubsAmount) ||6000
       }
 
-      //batch.set(lineRef, newLine)
-      //await batch.commit();
       await setDoc(lineRef, newLine)
       alert('تم إنشاء الخط بنجاح');
 
@@ -617,10 +615,20 @@ const Lines = () => {
     setSelectedRider(null)
   }
 
+  // Normalise rider and line destination comparison
+  const normalizeDestination = (str = "") => {
+    return str
+      .replace(/،/g, ",")          // unify Arabic & English commas
+      .replace(/[^\p{L}\p{N}\s]/gu, "") // remove punctuation/symbols
+      .replace(/\s+/g, " ")        // collapse multiple spaces
+      .trim()
+      .toLowerCase();
+  }
+
   // filter eligible riders
   const eligibleRiders = useMemo(() => {
     return riders.filter((r) => {
-      const sameDestination = r?.destination === selectedLine?.destination;
+      const sameDestination = normalizeDestination(r?.destination) === normalizeDestination(selectedLine?.destination);
       const freeToJoin = !r?.line_id && !r?.driver_id;
       return sameDestination && freeToJoin;
     });
@@ -1540,6 +1548,30 @@ const Lines = () => {
     }
   }
 
+  //Copy day start and time to all table days
+  const copyFirstDayToAll = () => {
+    // find the first day that has both start and end time
+    const firstDay = schoolTimetable.find(
+      (d) => d.startTime && d.endTime
+    );
+    if (!firstDay) return;
+
+    setSchoolTimetable((prev) =>
+      prev.map((item) => {
+        // skip Friday (5) and Saturday (6)
+        if (item.dayIndex === 5 || item.dayIndex === 6) return item;
+
+        return {
+          ...item,
+          active: true,
+          startTime: firstDay.startTime,
+          endTime: firstDay.endTime,
+        };
+      })
+    );
+  };
+
+
   if(isDeletingDriverFromLine || isDeletingRiderFromLine || fetchingInstitutions) {
     return(
       <div style={{ width:'70vw',height:'70vh',display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -1578,7 +1610,6 @@ const Lines = () => {
           open={openAddingNewLineModal}
           onCancel={handleCloseCreateNewLineModal}
           centered
-          //width={850}
           footer={null}
         >
           <div className='creating-new-line-modal'>
@@ -1632,7 +1663,7 @@ const Lines = () => {
 
               <div className="creating-new-line-form-timing">
                 {schoolTimetable.map((dayTime) => (
-                  <div key={dayTime.dayIndex} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div key={dayTime.dayIndex} className="creating-new-line-form-timing-box">
                     <input
                       type="checkbox"
                       checked={dayTime.active}
@@ -1654,6 +1685,17 @@ const Lines = () => {
                         onChange={(e) => handleTimeChange(dayTime.dayIndex, "endTime", e.target.value)}
                         disabled={!dayTime.active}
                       />
+                    </div>
+                    <div className='copy-day-timing-to-table'>
+                    {dayTime.dayIndex === 0 && dayTime.startTime && dayTime.endTime && (
+                      <button
+                        type="button"
+                        onClick={copyFirstDayToAll}
+                        style={{ marginLeft: "10px" }}
+                      >
+                        نسخ
+                      </button>
+                    )}
                     </div>
                   </div>
                 ))}
