@@ -25,6 +25,7 @@ const Lines = () => {
   const [lineIDFilter,setLineIDFilter] = useState('')
   const [ridersSortDirection, setRidersSortDirection] = useState(null)
   const [openAddingNewLineModal,setOpenAddingNewLineModal] = useState(false)
+  const [openLineDailyDetailsModal,setOpenLineDailyDetailsModal] = useState(false)
   const [destination, setDestination] = useState('')
   const [destinationLocation, setDestinationLocation] = useState(null)
   const [lineCarType,setLineCarType] = useState('')
@@ -55,7 +56,7 @@ const Lines = () => {
   const [switchLineStartDate, setSwitchLineStartDate] = useState('')
   const [switchLineEndDate, setSwitchLineEndDate] = useState('')
   const [transferType, setTransferType] = useState('today')
-  const [tripPhases, setTripPhases] = useState({ first: false, second: false });
+  const [tripPhases, setTripPhases] = useState({ first: false, second: false })
   const [isTransferringLine, setIsTransferringLine] = useState(false)
   const [isDeletingRiderFromLine,setIsDeletingRiderFromLine] = useState(false)
   const [isDeletingDriverFromLine,setIsDeletingDriverFromLine] = useState(false)
@@ -633,6 +634,8 @@ const Lines = () => {
       return sameDestination && freeToJoin;
     });
   }, [riders, selectedLine]);
+
+  console.log(eligibleRiders)
 
   //Open Map Modal (drivers)
   const handleOpenMapModalDrivers = () => {
@@ -1571,6 +1574,10 @@ const Lines = () => {
     );
   };
 
+  //Close line daily details modal
+  const handleCloseLineDailyDetailsModal = () => {
+    setOpenLineDailyDetailsModal(false)
+  }
 
   if(isDeletingDriverFromLine || isDeletingRiderFromLine || fetchingInstitutions) {
     return(
@@ -1844,6 +1851,29 @@ const Lines = () => {
         <div className="item-detailed-data-container">
           <div className='item-detailed-data-header'>
             <div className='item-detailed-data-header-title' style={{gap:'7px'}}>
+              {selectedLine.driver_id && (
+                <>
+                  <div className='line-daily-details-button' onClick={() => setOpenLineDailyDetailsModal(true)}>
+                    <h5>التفاصيل اليومية</h5> 
+                  </div>
+                  <Modal
+                    title='تفاصيل الخط اليومية'
+                    open={openLineDailyDetailsModal}
+                    onCancel={handleCloseLineDailyDetailsModal}
+                    centered
+                    footer={null}
+                  >
+                    <div className='creating-new-line-modal'>
+                      <div className='creating-new-line-form' style={{marginTop:'10px'}}>
+                        <div>
+                          <h5>السائق</h5>
+                        </div>
+                      </div>
+                    </div>
+                  </Modal> 
+                  <h5>-</h5>
+                </> 
+              )}           
               <h5>{selectedLine.id}</h5>
               <h5>-</h5>
               <h5>{selectedLine.destination}</h5>
@@ -2072,7 +2102,7 @@ const Lines = () => {
                     {/* Eligible riders as red markers */}
                     {eligibleRiders.map((rider) => (
                       <Marker
-                        key={rider?.user_doc_id}
+                        key={rider?.id}
                         position={{
                           lat: rider?.home_location?.latitude,
                           lng: rider?.home_location?.longitude,

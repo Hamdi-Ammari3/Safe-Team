@@ -1047,6 +1047,25 @@
   margin: 0;
   padding: 0;
 }
+.line-daily-details-button{
+  width: 120px;
+  height: 30px;
+  background-color: #16B1FF;
+  border: none;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.line-daily-details-button > h5 {
+  font-weight: 400;
+  font-size: 13px;
+  color: white;
+}
+.line-daily-details-button:hover {
+  background-color: #0382c2;
+}
 .info-details-back-button{
   width: 30px;
   height: 5vh;
@@ -1513,6 +1532,7 @@
     width: 100%;
     padding-inline: 22px;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     background-color: #F4F5FA;
