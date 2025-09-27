@@ -8,9 +8,9 @@ import dayjs from "dayjs"
 import utc from 'dayjs/plugin/utc'
 import timezone from 'dayjs/plugin/timezone'
 import "dayjs/locale/ar"
+import locale from "antd/es/date-picker/locale/ar_EG"
 import ClipLoader from "react-spinners/ClipLoader"
 import { Modal,DatePicker } from "antd"
-import locale from "antd/es/date-picker/locale/ar_EG"
 import { GoogleMap,Marker,InfoWindow } from "@react-google-maps/api"
 import { FaCaretUp,FaCaretDown } from "react-icons/fa6"
 import { FiEdit2 } from "react-icons/fi"
@@ -28,7 +28,7 @@ const Lines = () => {
   const { lines,drivers,riders } = useGlobalState()
   dayjs.extend(utc)
   dayjs.extend(timezone)
-  const today = dayjs()
+  const today = dayjs().tz("Asia/Baghdad").startOf("day")
 
   const [selectedLine, setSelectedLine] = useState(null)
   const [lineDriverNameFilter, setLineDriverNameFilter] = useState('')
@@ -74,7 +74,7 @@ const Lines = () => {
   const [isDeletingRiderFromLine,setIsDeletingRiderFromLine] = useState(false)
   const [isDeletingDriverFromLine,setIsDeletingDriverFromLine] = useState(false)
   const [selectedPhase, setSelectedPhase] = useState("first")
-  const [historyDate, setHistoryDate] = useState(dayjs().utcOffset(180))
+  const [historyDate, setHistoryDate] = useState(dayjs().tz("Asia/Baghdad").startOf("day"))
   const [lineHistory, setLineHistory] = useState(null)
   
   // New line time table
@@ -148,6 +148,23 @@ const Lines = () => {
   // Close create new line modal
   const handleCloseCreateNewLineModal = () => {
     setOpenAddingNewLineModal(false)
+    setDestination('')
+    setDestinationLocation(null)
+    setLineCarType('')
+    setLineAgeRangeFilter('')
+    setLineAgeRange(null)
+    setLineSeatsNumber(0)
+    setLineDriverSubsAmount(0)
+    setLineCompanySubsAmount(0)
+    setSchoolTimetable([
+      { dayIndex:0,day: "الأحد", active: false, startTime: null, endTime: null },
+      { dayIndex:1,day: "الاثنين", active: false, startTime: null, endTime: null },
+      { dayIndex:2,day: "الثلاثاء", active: false, startTime: null, endTime: null },
+      { dayIndex:3,day: "الأربعاء", active: false, startTime: null, endTime: null },
+      { dayIndex:4,day: "الخميس", active: false, startTime: null, endTime: null },
+      { dayIndex:5,day: "الجمعة", active: false, startTime: null, endTime: null },
+      { dayIndex:6,day: "السبت", active: false, startTime: null, endTime: null },
+    ]);
   }
 
   // New line car type
@@ -365,20 +382,20 @@ const Lines = () => {
 
   // Navigation days handler
   const changeDay = (amount) => {
-    const newDate = historyDate.add(amount, "day");
-    if (amount > 0 && newDate.isAfter(today)) return;
-    setHistoryDate(dayjs(newDate));
+    const newDate = historyDate.add(amount, "day")
+    if (amount > 0 && newDate.isAfter(today)) return
+    setHistoryDate(newDate.startOf("day"))
   }
 
   // Navigation months handler
   const changeMonth = (amount) => {
-    const newMonth = historyDate.add(amount, "month");
-    if (amount > 0 && isCurrentMonth) return;
-    const lastDayOfMonth = newMonth.daysInMonth();
+    const newMonth = historyDate.add(amount, "month")
+    if (amount > 0 && isCurrentMonth) return
+    const lastDayOfMonth = newMonth.daysInMonth()
     if (historyDate.date() > lastDayOfMonth) {
-      setHistoryDate(dayjs(newMonth.date(lastDayOfMonth)))
+      setHistoryDate(newMonth.date(lastDayOfMonth).startOf("day"))
     } else {
-      setHistoryDate(dayjs(newMonth))
+      setHistoryDate(newMonth.startOf("day"))
     }
   }
 
@@ -386,7 +403,7 @@ const Lines = () => {
   const loadDriverLineHistory = (line, date) => {
     if (!driver) return null;
 
-    const iraqNow = dayjs(date).utcOffset(180);
+    const iraqNow = date.tz("Asia/Baghdad").startOf("day")
     const yearMonthKey = `${iraqNow.year()}-${String(iraqNow.month() + 1).padStart(2, "0")}`;
     const dayKey = String(iraqNow.date()).padStart(2, "0");
 
@@ -1091,9 +1108,10 @@ const Lines = () => {
 
   // Close switch line to other driver modal
   const handleCloseSwitchLineModal = () => {
+    setIsOpeningSwitchLineModal(false)
     setSwitchLineStartDate('')
     setSwitchLineEndDate('')
-    setIsOpeningSwitchLineModal(false)
+    setTransferType('determinedPeriode')
     setTransferPeriode('today')
     setSwitchDriver({id: '',notification_token: null,phone_number: null})
   }
@@ -2879,33 +2897,3 @@ const Lines = () => {
 }
 
 export default Lines
-
-
-/*
-                          
-                            <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "15px" }}>
-                              <thead>
-                                <tr>
-                                  <th style={{ border: "1px solid #ccc", padding: "5px" }}>الراكب</th>
-                                  <th style={{ border: "1px solid #ccc", padding: "5px" }}>
-                                    {selectedPhase === "first" ? "صعود" : "نزول"}
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {(selectedPhase === "first"
-                                  ? lineHistory?.first_phase?.riders || []
-                                  : lineHistory?.second_phase?.riders || []
-                                ).map((r) => (
-                                  <tr key={r.id}>
-                                    <td style={{ border: "1px solid #ccc", padding: "5px" }}>
-                                      {r.name} {r.family_name}
-                                    </td>
-                                    <td style={{ border: "1px solid #ccc", padding: "5px" }}>
-                                      {selectedPhase === "first" ? r.picked_up_time || "--" : r.dropped_off_time || "--"}
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-*/
