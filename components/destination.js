@@ -14,6 +14,7 @@ const Destination = () => {
 
   const [destinationNameFilter,setDestinationNameFilter] = useState('')
   const [destinationIDFilter,setDestinationIDFilter] = useState('')
+  const [contractTypeFilter,setContractTypeFilter] = useState('')
   const [ridersCountSortDirection, setRidersCountSortDirection] = useState(null)
   const [lineCountSortDirection, setLineCountSortDirection] = useState(null)
   const [isOpeningAddingDestinationModal,setIsOpeningAddingDestinationModal] = useState(false)
@@ -45,7 +46,9 @@ const Destination = () => {
   const filteredDestinations = enrichedDestination.filter((destination) => {
     const matchesName = destination.name.includes(destinationNameFilter)
     const mathcesID = destination.id.includes(destinationIDFilter)
-    return matchesName && mathcesID
+    const matchesContractType = contractTypeFilter === '' || contractTypeFilter === destination.contract_type
+
+    return matchesName && mathcesID && matchesContractType
   });
 
   // Sort schools by student count
@@ -67,6 +70,11 @@ const Destination = () => {
     setDestinationIDFilter(e.target.value)
   }
 
+  //handle status change
+  const handleContractTypeChange = (e) => {
+    setContractTypeFilter(e.target.value)
+  }
+
   // Handle sorting by highest student count
   const handleSortByHighestStudentCount = () => {
     setRidersCountSortDirection('desc');
@@ -85,7 +93,7 @@ const Destination = () => {
   // Handle sorting by lowest line count
   const handleSortByLowestLineCount = () => {
     setLineCountSortDirection('asc');
-  };
+  }
 
   // Open adding new school modal
   const openAddNewDestinationModal = () => {
@@ -138,6 +146,15 @@ const Destination = () => {
       setIsAddingNewSchoolLoading(false)
       setDestination('')
       setNewDestinationContractType("");
+    }
+  }
+
+  //Contract type in arabic
+  const contractTypeArabic = (contract) => {
+    if(contract === 'app with drivers'){
+      return 'تطبيق مع سواق'
+    } else {
+      return 'تطبيق فقط'
     }
   }
 
@@ -225,10 +242,12 @@ const Destination = () => {
       <div className='students-section-inner-title' style={{width:'350px'}}>
         <select
           style={{width:'250px'}}
+          value={contractTypeFilter}
+          onChange={handleContractTypeChange}
         >
           <option value=''>نوع الخدمة</option>
-          <option value=''>تطبيق مع سواق</option>
-          <option value=''>تطبيق فقط</option>
+          <option value='app with drivers'>تطبيق مع سواق</option>
+          <option value='only app'>تطبيق فقط</option>
         </select>
       </div>
       <div className='students-section-inner-title' style={{width:'150px'}}>
@@ -273,7 +292,7 @@ const Destination = () => {
             <h5>{dest.name}</h5>
           </div>
           <div style={{width:'350px'}}>
-            <h5>{dest.id}</h5>
+            <h5>{contractTypeArabic(dest.contract_type)}</h5>
           </div>
           <div style={{width:'150px'}}>
             <h5>{dest.linesCount}</h5>

@@ -856,7 +856,7 @@
   border-radius: 10px;
 }
 .switch-line-info-conainer{
-  height: 350px;
+  height: 500px;
   margin: 0;
   display: flex;
   flex-direction: column;
@@ -1626,6 +1626,100 @@
   }
   .line-time-table th {
     background-color: #f4f4f4;
+  }
+  .driver-line-history-box{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+  .ant-picker-input >input{
+    cursor: pointer;
+  }
+  .driver-line-history-date-day-box{
+    width: 200px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+  }
+  .driver-line-history-date-day-box > p {
+    color:white
+  }
+  .driver-line-history-date-switch-button{
+    width: 25px;
+    height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+    background-color: #16B1FF;
+    cursor: pointer;
+  }
+  .driver-line-history-date-switch-button:hover{
+    background-color: #0289cc;
+  }
+  .driver-line-history-box-phase-btn,.driver-line-history-box-phase-btn-active{
+    width: 100px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .driver-line-history-box-phase-btn-active{
+    background-color: rgba(190, 154, 78, 0.40);
+  }
+  .driver-line-history-main-box,.driver-line-history-main-box-start-trip-riders{
+    width: 400px;
+    height: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+  }
+  .ant-picker-content th{
+    font-size: 12px;
+  }
+  .driver-line-history-main-box-start-trip-timing{
+    width: 400px;
+    height: 50px;
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+  .driver-line-history-main-box-start-trip-riders{
+    height: 200px;
+    justify-content: center;
+  }
+  .driver-line-history-main-box-start-trip-riders-header,.driver-line-history-main-box-start-trip-rider-item{
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .driver-line-history-main-box-start-trip-riders-header{
+    height: 30px;
+    margin-bottom: 15px;
+  }
+  .driver-line-history-main-box-start-trip-riders-header > h5{
+    text-align: center;
+  }
+  .driver-line-history-main-box-start-trip-riders-header > h5:first-child {
+    width: 250px; 
+  }
+  .driver-line-history-main-box-start-trip-riders-header > h5:nth-child(2) {
+    width: 100px; 
+  }
+  .driver-line-history-main-box-start-trip-riders-list{
+    height: 150px;
+    overflow: auto;
   }
   .creating-new-line-modal{
     width: 470px;

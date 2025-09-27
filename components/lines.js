@@ -4,8 +4,13 @@ import { useGlobalState } from '../globalState'
 import { getDocs,collection,Timestamp,writeBatch,doc,getDoc,arrayUnion,setDoc } from "firebase/firestore"
 import { DB } from '../firebaseConfig'
 import DestinationAutocomplete from './destinationAutocomplete'
+import dayjs from "dayjs"
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+import "dayjs/locale/ar"
 import ClipLoader from "react-spinners/ClipLoader"
-import { Modal } from "antd"
+import { Modal,DatePicker } from "antd"
+import locale from "antd/es/date-picker/locale/ar_EG"
 import { GoogleMap,Marker,InfoWindow } from "@react-google-maps/api"
 import { FaCaretUp,FaCaretDown } from "react-icons/fa6"
 import { FiEdit2 } from "react-icons/fi"
@@ -13,10 +18,17 @@ import { BsArrowLeftShort } from "react-icons/bs"
 import { FcCancel } from "react-icons/fc"
 import { FcPlus } from "react-icons/fc"
 import { IoClose } from "react-icons/io5"
+import { PiCaretDoubleRightFill } from "react-icons/pi"
+import { PiCaretDoubleLeftFill } from "react-icons/pi"
+import { BiSolidRightArrow } from "react-icons/bi"
+import { BiSolidLeftArrow } from "react-icons/bi"
 import switchLine from '../images/transfer.png'
 
 const Lines = () => {
   const { lines,drivers,riders } = useGlobalState()
+  dayjs.extend(utc)
+  dayjs.extend(timezone)
+  const today = dayjs()
 
   const [selectedLine, setSelectedLine] = useState(null)
   const [lineDriverNameFilter, setLineDriverNameFilter] = useState('')
@@ -52,15 +64,19 @@ const Lines = () => {
   const [addingRiderToLine,setAddingRiderToLine] = useState(false)
   const [addingDriverToLine,setAddingDriverToLine] = useState(false)
   const [isOpeningSwitchLineModal, setIsOpeningSwitchLineModal] = useState(false)
-  const [switchDriverID, setSwitchDriverID] = useState('')
+  const [switchDriver, setSwitchDriver] = useState({id: '',notification_token: null,phone_number: null})
   const [switchLineStartDate, setSwitchLineStartDate] = useState('')
   const [switchLineEndDate, setSwitchLineEndDate] = useState('')
-  const [transferType, setTransferType] = useState('today')
+  const [transferType, setTransferType] = useState('determinedPeriode')
+  const [transferPeriode, setTransferPeriode] = useState('today')
   const [tripPhases, setTripPhases] = useState({ first: false, second: false })
   const [isTransferringLine, setIsTransferringLine] = useState(false)
   const [isDeletingRiderFromLine,setIsDeletingRiderFromLine] = useState(false)
   const [isDeletingDriverFromLine,setIsDeletingDriverFromLine] = useState(false)
-
+  const [selectedPhase, setSelectedPhase] = useState("first")
+  const [historyDate, setHistoryDate] = useState(dayjs().utcOffset(180))
+  const [lineHistory, setLineHistory] = useState(null)
+  
   // New line time table
   const [schoolTimetable, setSchoolTimetable] = useState([
     { dayIndex:0,day:"الأحد",active: false,startTime: null,endTime: null },
@@ -325,7 +341,70 @@ const Lines = () => {
     setSelectedLine(null)
     setIsEditing({})
     setEditingTimes({})
+  }
+
+  //Fetch driver data
+  const findDriverInfoFromId = (driverID) => {
+    const theDriver = drivers.find((driver) => driver.id === driverID)
+    if(!theDriver) {
+      console.log('driver didnt exsit')
+      return null;
+    }
+    return {
+      name: theDriver.full_name,
+      family_name: theDriver.family_name,
+      car_type:theDriver.car_type,
+      id:theDriver.id,
+      dailyTracking:theDriver.dailyTracking
+    }
+  }
+
+  const driver = findDriverInfoFromId(selectedLine?.driver_id)
+  const isToday = historyDate?.isSame(today, "day")
+  const isCurrentMonth = historyDate?.isSame(today, "month") && historyDate?.isSame(today, "year")
+
+  // Navigation days handler
+  const changeDay = (amount) => {
+    const newDate = historyDate.add(amount, "day");
+    if (amount > 0 && newDate.isAfter(today)) return;
+    setHistoryDate(dayjs(newDate));
+  }
+
+  // Navigation months handler
+  const changeMonth = (amount) => {
+    const newMonth = historyDate.add(amount, "month");
+    if (amount > 0 && isCurrentMonth) return;
+    const lastDayOfMonth = newMonth.daysInMonth();
+    if (historyDate.date() > lastDayOfMonth) {
+      setHistoryDate(dayjs(newMonth.date(lastDayOfMonth)))
+    } else {
+      setHistoryDate(dayjs(newMonth))
+    }
+  }
+
+  // Function to load line history from driver.dailyTracking
+  const loadDriverLineHistory = (line, date) => {
+    if (!driver) return null;
+
+    const iraqNow = dayjs(date).utcOffset(180);
+    const yearMonthKey = `${iraqNow.year()}-${String(iraqNow.month() + 1).padStart(2, "0")}`;
+    const dayKey = String(iraqNow.date()).padStart(2, "0");
+
+    const trackingDay = driver?.dailyTracking?.[yearMonthKey]?.[dayKey] || null;
+    let foundLine = null;
+
+    if (trackingDay?.today_lines){
+      foundLine = trackingDay.today_lines.find(l => l.id === line.id) || null;
+    }
+    return foundLine;
   };
+
+  useEffect(() => {
+    if (driver && selectedLine) {
+      const history = loadDriverLineHistory(selectedLine, historyDate);
+      setLineHistory(history);
+    }
+  }, [driver,selectedLine,historyDate]);
 
   //Calculate rider age
   const calculateAge = (birthdate) => {
@@ -341,7 +420,7 @@ const Lines = () => {
     }
   
     return age;
-  };
+  }
 
   // Handle edit line time table click
   const handleEditClick = (index, startTime, endTime) => {
@@ -635,8 +714,6 @@ const Lines = () => {
     });
   }, [riders, selectedLine]);
 
-  console.log(eligibleRiders)
-
   //Open Map Modal (drivers)
   const handleOpenMapModalDrivers = () => {
     setIsModalMapVisibleDriver(true)
@@ -692,25 +769,6 @@ const Lines = () => {
 
     return coords;
   }, [selectedLine]);
-
-  const lineCenter = useMemo(() => {
-    if (!allLineCoordinates.length) return null;
-
-    let minLat = Infinity, maxLat = -Infinity;
-    let minLng = Infinity, maxLng = -Infinity;
-
-    allLineCoordinates.forEach((coord) => {
-      minLat = Math.min(minLat, coord.lat);
-      maxLat = Math.max(maxLat, coord.lat);
-      minLng = Math.min(minLng, coord.lng);
-      maxLng = Math.max(maxLng, coord.lng);
-    });
-
-    return {
-      lat: (minLat + maxLat) / 2,
-      lng: (minLng + maxLng) / 2,
-    };
-  }, [allLineCoordinates]);
 
   const handleMapLoad = (map) => {
     if (allLineCoordinates.length === 0) return;
@@ -1033,16 +1091,25 @@ const Lines = () => {
 
   // Close switch line to other driver modal
   const handleCloseSwitchLineModal = () => {
-    setSwitchDriverID('')
     setSwitchLineStartDate('')
     setSwitchLineEndDate('')
     setIsOpeningSwitchLineModal(false)
-    setTransferType('today')
+    setTransferPeriode('today')
+    setSwitchDriver({id: '',notification_token: null,phone_number: null})
   }
 
   // Select substitute driver
-  const switchDriverIDChangeHandler = (e) => {
-    setSwitchDriverID(e.target.value)
+  const switchDriverChangeHandler = (e) => {
+    const selectedId = e.target.value;
+    const driver = drivers.find(d => d.id === selectedId);
+
+    if (driver) {
+      setSwitchDriver({
+        id: driver.id,
+        notification_token: driver.notification_token || null,
+        phone_number: driver.phone_number || null,
+      });
+    }
   }
 
   // Handle date selection (date-only) [start periode]
@@ -1064,19 +1131,19 @@ const Lines = () => {
 
   // Transfer line to another driver
   const handleTransferLineToDriverB = async () => {
-    if(!switchDriverID) {
+    if(!switchDriver?.id) {
       alert('يرجى تحديد السائق البديل')
       return
     }
 
-    if(transferType === 'future') {
+    if(transferType === 'determinedPeriode' && transferPeriode === 'future') {
       if(!switchLineStartDate && !switchLineEndDate) {
         alert('يرجى تحديد المدة الزمنية')
         return
       }
     }
 
-    if(transferType === 'today') {
+    if(transferType === 'determinedPeriode' && transferPeriode === 'today') {
       if(!tripPhases.first && !tripPhases.second) {
         alert('يرجى تحديد رحلة الذهاب او العودة')
         return
@@ -1089,8 +1156,8 @@ const Lines = () => {
   
     try {
       const driverARef = doc(DB, "drivers", selectedLine?.driver_id);
-      const driverBRef = doc(DB, "drivers", switchDriverID);
-      const lineRef = doc(DB, "lines", selectedLine.id)
+      const driverBRef = doc(DB, "drivers", switchDriver?.id);
+      const lineRef = doc(DB, "lines", selectedLine?.id)
       const batch = writeBatch(DB);
   
       const [driverASnap, driverBSnap] = await Promise.all([
@@ -1103,7 +1170,7 @@ const Lines = () => {
       const driverAData = driverASnap.data();
       const driverBData = driverBSnap.data();
 
-      if(transferType === 'future') {
+      if(transferType === 'determinedPeriode' && transferPeriode === 'future') {
         const startDate = new Date(switchLineStartDate);
         startDate.setUTCHours(0, 0, 0, 0);
         const endDate = new Date(switchLineEndDate);
@@ -1122,7 +1189,7 @@ const Lines = () => {
             ? {
                 ...line,
                 desactive_periode: { start: startTimestamp, end: endTimestamp },
-                subs_driver: switchDriverID,
+                subs_driver: switchDriver?.id,
               }
             : line
         );
@@ -1137,18 +1204,23 @@ const Lines = () => {
         const updatedDriverBLines = [...(driverBData.lines || []), futureLine];
         batch.update(driverBRef, { lines: updatedDriverBLines });
 
-        // Save transfer data inside line doc
+        // === Build transfer object
+        const transferObj = {
+          driverA: selectedLine?.driver_id,
+          driverB: switchDriver?.id,
+          type: 'determinedPeriode',
+          startDate: startTimestamp,
+          endDate: endTimestamp,
+        };
+
+        // === Update line doc
         batch.update(lineRef, {
-          transferredTo: {
-            startDate: startTimestamp,
-            endDate: endTimestamp,
-            subs_driver: switchDriverID,
-          }
-        }) 
+          transferredTo: arrayUnion(transferObj)
+        });
       }
 
       //Today transfer
-      if (transferType === 'today') {
+      if (transferType === 'determinedPeriode' && transferPeriode === 'today') {
         const today = new Date();
         today.setUTCHours(0, 0, 0, 0);
         const yearMonthKey = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, "0")}`;
@@ -1309,7 +1381,7 @@ const Lines = () => {
               ? {
                 ...line,
                 desactive_periode: { start: startTimestamp, end: endTimestamp },
-                subs_driver: switchDriverID,
+                subs_driver: switchDriver?.id,
               }
             : line
           )
@@ -1338,13 +1410,57 @@ const Lines = () => {
         // Save transfer data inside line doc
         const todayStart = Timestamp.fromDate(today)
         const todayEnd = Timestamp.fromDate(today)
+
+        // === Build transfer object
+        const transferObj = {
+          driverA: selectedLine?.driver_id,
+          driverB: switchDriver?.id,
+          type: 'determinedPeriode',
+          startDate: todayStart,
+          endDate: todayEnd,
+        };
+
+        // === Update line doc
         batch.update(lineRef, {
-          transferredTo: {
-            startDate: todayStart,
-            endDate: todayEnd,
-            subs_driver: switchDriverID,
-          }
-        }) 
+          transferredTo: arrayUnion(transferObj)
+        });
+
+      }
+
+      if(transferType === 'permanente') {
+        const originalLine = driverAData.lines.find(l => l.id === selectedLine?.id);
+        if (!originalLine) throw new Error("Line not found in driver A");
+
+        // === Remove line from driver A completely
+        const updatedDriverALines = driverAData.lines.filter(l => l.id !== selectedLine?.id);
+        batch.update(driverARef, { lines: updatedDriverALines });
+
+        // === Add line to driver B permanently
+        const updatedDriverBLines = [...(driverBData.lines || []), originalLine ];
+        batch.update(driverBRef, { lines: updatedDriverBLines });
+
+        // === Update each rider document with new driver_id
+        (selectedLine.riders || []).forEach(rider => {
+          const riderRef = doc(DB, "riders", rider.id);
+          batch.update(riderRef, { driver_id: switchDriver?.id });
+        });
+
+        // === Build transfer object
+        const transferObj = {
+          driverA: selectedLine?.driver_id,
+          driverB: switchDriver?.id,
+          type: 'permanente',
+          startDate: Timestamp.now(),
+          endDate: null,
+        };
+
+        // === Update line doc with new permanent driver + append to transfer history
+        batch.update(lineRef, {
+          driver_id: switchDriver?.id,
+          driver_notification_token:switchDriver?.notification_token,
+          driver_phone_number:switchDriver?.phone_number,
+          transferredTo: arrayUnion(transferObj)
+        });
       }
   
       await batch.commit();
@@ -1353,7 +1469,7 @@ const Lines = () => {
       console.error("Transfer failed:", err);
       alert("❌ خطأ أثناء نقل الخط");
     } finally {
-      setSwitchDriverID('')
+      setSwitchDriver({id: '',notification_token: null,phone_number: null})
       setSwitchLineStartDate('')
       setSwitchLineEndDate('')
       setIsOpeningSwitchLineModal(false)
@@ -1536,21 +1652,6 @@ const Lines = () => {
     }
   }
 
-  //Fetch driver data
-  const findDriverInfoFromId = (driverID) => {
-    const theDriver = drivers.find((driver) => driver.id === driverID)
-    if(!theDriver) {
-      console.log('driver didnt exsit')
-      return null;
-    }
-    return {
-      name: theDriver.full_name,
-      family_name: theDriver.family_name,
-      car_type:theDriver.car_type,
-      id:theDriver.id
-    }
-  }
-
   //Copy day start and time to all table days
   const copyFirstDayToAll = () => {
     // find the first day that has both start and end time
@@ -1577,6 +1678,8 @@ const Lines = () => {
   //Close line daily details modal
   const handleCloseLineDailyDetailsModal = () => {
     setOpenLineDailyDetailsModal(false)
+    setHistoryDate(dayjs().utcOffset(180))
+    setSelectedPhase('first')
   }
 
   if(isDeletingDriverFromLine || isDeletingRiderFromLine || fetchingInstitutions) {
@@ -1865,9 +1968,143 @@ const Lines = () => {
                   >
                     <div className='creating-new-line-modal'>
                       <div className='creating-new-line-form' style={{marginTop:'10px'}}>
-                        <div>
-                          <h5>السائق</h5>
+
+                        {/* Driver Info */} 
+                        <div className='driver-line-history-box' 
+                          style={{flexDirection:'row-reverse',height:'50px',width:'400px',border:'1px solid #ddd',borderRadius:'10px'}}
+                        >
+                          <h5 style={{fontWeight:'400',marginLeft:'5px'}}>السائق</h5>
+                          <h5>{driver.name} {driver.family_name}</h5>
+                          <h5>-</h5>
+                          <h5>{driver.id}</h5>
                         </div>
+
+                        {/* Date Picker */}
+                        <div className='driver-line-history-box'>
+                          <div 
+                            onClick={() => changeMonth(-1)} 
+                            className='driver-line-history-date-switch-button'
+                          >
+                            <PiCaretDoubleLeftFill color='#fff' size={16}/>
+                          </div>
+                          <div 
+                            onClick={() => changeDay(-1)} 
+                            className='driver-line-history-date-switch-button'
+                          >
+                            <BiSolidLeftArrow color='#fff' size={16}/>
+                          </div>
+                          <div className='driver-line-history-date-day-box'>
+                            <DatePicker
+                              locale={locale}
+                              value={historyDate}
+                              format={(date) => 
+                                //date ? date.locale("ar").format("dddd، DD MMMM YYYY") : ""
+                                date ? date.tz("Asia/Baghdad").locale("ar").format("dddd، DD MMMM YYYY") : ""
+                              }
+                              onChange={(date) => {
+                                if (date && !date.isAfter(today)) {
+                                  const normalized = dayjs(date).tz("Asia/Baghdad").startOf("day");
+                                  setHistoryDate(normalized);
+                                  //setHistoryDate(date.utcOffset(180));
+                                }
+                              }}
+                              disabledDate={(current) => current && current > today}
+                              allowClear={false}
+                            />
+                          </div>
+                          <div 
+                            onClick={() => changeDay(1)} 
+                            disabled={isToday} 
+                            className='driver-line-history-date-switch-button'
+                          >
+                            <BiSolidRightArrow color='#fff' size={16}/>
+                          </div>
+                          <div 
+                            onClick={() => changeMonth(1)} 
+                            disabled={isCurrentMonth} 
+                            className='driver-line-history-date-switch-button'
+                          >
+                            <PiCaretDoubleRightFill color='#fff' size={16}/>
+                          </div>
+                        </div>
+
+                        {/* Phase Switcher */}
+                        <div className='driver-line-history-box' style={{gap:'25px',flexDirection:'row-reverse'}}>
+                          <div
+                            className={selectedPhase === "first" ? "driver-line-history-box-phase-btn-active" : "driver-line-history-box-phase-btn"}
+                            onClick={() => setSelectedPhase("first")}
+                          >
+                            <h5
+                              className={selectedPhase === "first" ? "driver-line-history-box-phase-btn-text-active" : "driver-line-history-box-phase-btn-text"}
+                            >رحلة الذهاب</h5>                           
+                          </div>
+                          <div
+                            className={selectedPhase === "second" ? "driver-line-history-box-phase-btn-active" : "driver-line-history-box-phase-btn"}
+                            onClick={() => setSelectedPhase("second")}
+                          >
+                            <h5
+                              className={selectedPhase === "second" ? "driver-line-history-box-phase-btn-text-active" : "driver-line-history-box-phase-btn-text"}
+                            >رحلة العودة</h5>    
+                          </div>
+                        </div>
+
+                        {/* History Info */}
+                        {lineHistory ? (
+                          <div className='driver-line-history-main-box'>
+
+                            <div className='driver-line-history-main-box-start-trip-timing'>
+                              <h5>بداية الرحلة</h5>
+                              <h5>
+                                {selectedPhase === "first"
+                                  ? lineHistory?.first_phase?.phase_starting_time || "--"
+                                  : lineHistory?.second_phase?.phase_starting_time || "--"}
+                              </h5>
+                            </div>
+
+                            <div className='driver-line-history-main-box-start-trip-riders'>
+                              <div className='driver-line-history-main-box-start-trip-riders-header'>
+                                <h5>الراكب</h5>
+                                <h5>{selectedPhase === "first" ? 'صعود' : 'نزول'}</h5>
+                              </div>
+                              <div className='driver-line-history-main-box-start-trip-riders-list'>
+                                {(selectedPhase === "first"
+                                  ? lineHistory?.first_phase?.riders || []
+                                  : lineHistory?.second_phase?.riders || []
+                                ).map((r) => (
+                                  <div 
+                                    key={r.id} 
+                                    className='driver-line-history-main-box-start-trip-riders-header' 
+                                    style={{marginBottom:'1px',backgroundColor:'#efeff0ff'}}
+                                  >
+                                    <h5>
+                                      {r.name} {r.family_name}
+                                    </h5>
+                                    <h5>
+                                      {selectedPhase === "first" ? r.picked_up_time || "--" : r.dropped_off_time || "--"}
+                                    </h5>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+
+                            {/* End of phase */}
+                            {selectedPhase === "first" ? (
+                              <div className='driver-line-history-main-box-start-trip-timing'>
+                                <h5>الوصول للوجهة</h5>
+                                <h5>{lineHistory?.first_phase?.phase_finishing_time || '--'}</h5>
+                              </div>
+                            ) : (
+                              <div className='driver-line-history-main-box-start-trip-timing'>
+
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className='driver-line-history-main-box' style={{height:'200px',justifyContent:'center'}}>
+                            <p>لا يوجد بيانات لهذا اليوم</p>
+                          </div>                         
+                        )}
                       </div>
                     </div>
                   </Modal> 
@@ -2217,7 +2454,7 @@ const Lines = () => {
 
                                       {/* Select substitute driver */}
                                       <div className='swicth_line_driver_select'>
-                                        <select onChange={switchDriverIDChangeHandler} value={switchDriverID}>
+                                        <select onChange={switchDriverChangeHandler} value={switchDriver.id}>
                                           <option value=''>السائق البديل</option>
                                           {drivers
                                             .filter(driver => driver?.service_type === 'خطوط')
@@ -2230,30 +2467,54 @@ const Lines = () => {
                                         </select>
                                       </div>
 
-                                      {/* Select substitution type today or future */}
+                                      {/* Select substitution type permanente or determined periode */}
                                       <div className="switch-line-mode-toggle">
                                         <div>
                                           <input
                                             type="radio"
-                                            value="today"
-                                            checked={transferType === 'today'}
-                                            onChange={() => setTransferType('today')}
+                                            value="determinedPeriode"
+                                            checked={transferType === 'determinedPeriode'}
+                                            onChange={() => setTransferType('determinedPeriode')}
                                           />
-                                          <h5>اليوم</h5>
+                                          <h5>لفترة محددة</h5>
                                         </div>
                                         <div>
                                           <input
                                             type="radio"
-                                            value="future"
-                                            checked={transferType === 'future'}
-                                            onChange={() => setTransferType('future')}
+                                            value="permanente"
+                                            checked={transferType === 'permanente'}
+                                            onChange={() => setTransferType('permanente')}
                                           />
-                                          <h5>تحديد تاريخ مستقبلي</h5>
+                                          <h5>بشكل دائم</h5>
                                         </div>
                                       </div>
+                                      
+                                      {transferType === 'determinedPeriode' && (
+                                        <div className="switch-line-mode-toggle">
+                                          <div>
+                                            <input
+                                              type="radio"
+                                              value="today"
+                                              checked={transferPeriode === 'today'}
+                                              onChange={() => setTransferPeriode('today')}
+                                            />
+                                            <h5>اليوم</h5>
+                                          </div>
+                                          <div>
+                                            <input
+                                              type="radio"
+                                              value="future"
+                                              checked={transferPeriode === 'future'}
+                                              onChange={() => setTransferPeriode('future')}
+                                            />
+                                            <h5>تحديد تاريخ مستقبلي</h5>
+                                          </div>
+                                        </div>
+                                      )}
+                                      
 
                                       {/* Transfer for Today */}
-                                      {transferType === 'today' && (
+                                      {transferType === 'determinedPeriode' && transferPeriode === 'today' && (
                                         <div className="switch-line-mode-toggle">
                                           <div>
                                             <input
@@ -2279,7 +2540,7 @@ const Lines = () => {
                                         </div>
                                       )}
 
-                                      {transferType === 'future' && (
+                                      {transferType === 'determinedPeriode' && transferPeriode === 'future' && (
                                         <>
                                           <div className='swicth_line_periode_date'>
                                             <h5>تاريخ البداية</h5>
@@ -2618,3 +2879,33 @@ const Lines = () => {
 }
 
 export default Lines
+
+
+/*
+                          
+                            <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "15px" }}>
+                              <thead>
+                                <tr>
+                                  <th style={{ border: "1px solid #ccc", padding: "5px" }}>الراكب</th>
+                                  <th style={{ border: "1px solid #ccc", padding: "5px" }}>
+                                    {selectedPhase === "first" ? "صعود" : "نزول"}
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(selectedPhase === "first"
+                                  ? lineHistory?.first_phase?.riders || []
+                                  : lineHistory?.second_phase?.riders || []
+                                ).map((r) => (
+                                  <tr key={r.id}>
+                                    <td style={{ border: "1px solid #ccc", padding: "5px" }}>
+                                      {r.name} {r.family_name}
+                                    </td>
+                                    <td style={{ border: "1px solid #ccc", padding: "5px" }}>
+                                      {selectedPhase === "first" ? r.picked_up_time || "--" : r.dropped_off_time || "--"}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+*/
