@@ -372,7 +372,9 @@ const Lines = () => {
       family_name: theDriver.family_name,
       car_type:theDriver.car_type,
       id:theDriver.id,
-      dailyTracking:theDriver.dailyTracking
+      dailyTracking:theDriver.dailyTracking,
+      home_location:theDriver.home_location,
+      number_of_lines:theDriver.lines?.length
     }
   }
 
@@ -849,7 +851,7 @@ const Lines = () => {
 
       // Rider payload
       const riderData = {
-        name: rider.full_name, // change it to family name
+        name: rider.full_name,
         family_name: rider.family_name,
         id: rider.id,
         birth_date: rider.birth_date,
@@ -1934,6 +1936,8 @@ const Lines = () => {
     </div>
   )
 
+  console.log(selectedDriver?.lines.length)
+
   return (
     <div className='white_card-section-container'>
       {!selectedLine ? (
@@ -2339,6 +2343,25 @@ const Lines = () => {
                       }}
                     />
 
+                    {selectedLine.driver_id && (
+                      (() => {
+                        const driver = findDriverInfoFromId(selectedLine.driver_id)
+                        return (
+                          <Marker
+                            position={{
+                              lat: driver?.home_location?.latitude,
+                              lng: driver?.home_location?.longitude,
+                            }}
+                            icon={{
+                              url: "/icons/minibus.png",
+                              scaledSize: new window.google.maps.Size(30, 30), // resize marker
+                            }}
+                            onClick={() => setSelectedDriver(driver)}
+                          />                                                     
+                        )
+                      })()
+                    )}
+
                     {/* Riders already in the line (blue markers) */}
                     {selectedLine?.riders?.map((rider) => (
                       <Marker
@@ -2384,6 +2407,9 @@ const Lines = () => {
                             <h4>{selectedRider.family_name}</h4>
                           </div>
                           <div>
+                            <h4>{selectedRider?.birth_date ? calculateAge(selectedRider.birth_date) : '-'}</h4>
+                          </div>
+                          <div>
                             <h4 style={{fontSize:'12px'}}>{selectedRider.id}</h4>
                           </div>
                           {selectedRider?.line_id === null && (
@@ -2409,6 +2435,33 @@ const Lines = () => {
                               )}
                             </div>   
                           )}                                           
+                        </div>
+                      </InfoWindow>
+                    )}
+
+                    {/* Show driver info on marker click */}
+                    {selectedDriver && (
+                      <InfoWindow
+                        position={{
+                          lat: selectedDriver?.home_location.latitude,
+                          lng: selectedDriver?.home_location.longitude,
+                        }}
+                        onCloseClick={() => setSelectedDriver(null)}
+                      >
+                        <div className='marker-info-modal-box'>
+                          <div>
+                            <h4>{selectedDriver?.full_name || selectedDriver?.name}</h4>
+                            <h4>{selectedDriver?.family_name}</h4>
+                          </div>
+                          <div>
+                            <h4>{selectedDriver?.car_type}</h4>
+                          </div>
+                          <div>
+                            <h4>{selectedDriver?.lines.length}</h4>
+                          </div>  
+                          <div>
+                            <h4 style={{fontSize:'12px'}}>{selectedDriver?.id}</h4>
+                          </div>                                        
                         </div>
                       </InfoWindow>
                     )}
@@ -2686,9 +2739,9 @@ const Lines = () => {
                         ))}
 
                         {/* Eligible drivers */}
-                        {eligibleDrivers.map((driver) => (
+                        {eligibleDrivers.map((driver,index) => (
                           <Marker
-                            key={driver?.user_doc_id}
+                            key={index}
                             position={{
                               lat: driver?.home_location?.latitude,
                               lng: driver?.home_location?.longitude,
@@ -2715,6 +2768,12 @@ const Lines = () => {
                                 <h4>{selectedDriver?.full_name}</h4>
                                 <h4>{selectedDriver?.family_name}</h4>
                               </div> 
+                              <div>
+                                <h4>{selectedDriver?.car_type}</h4>
+                              </div>
+                              <div>
+                                <h4>{selectedDriver?.lines.length}</h4>
+                              </div>
                               <div>
                                 <h4 style={{fontSize:'12px'}}>{selectedDriver?.id}</h4>
                               </div>

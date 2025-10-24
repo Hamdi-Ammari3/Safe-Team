@@ -19,7 +19,6 @@ const Navbar = () => {
     setIsLoggingOUt(true)
     try {
       localStorage.removeItem('adminLoggedIn')
-      localStorage.removeItem('adminName')
       localStorage.removeItem('adminDahboardName')
       router.push('/login');
     } catch (error) {

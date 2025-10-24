@@ -75,12 +75,11 @@ const DeleteAccountRequest = () => {
             ) : (
               <button onClick={handleSubmit}>طلب مسح الحساب</button>
             )}
-            
           </form>
         </div>
         <div className='delete_account_box'>
-        <p>الرجوع الى صفحة الدخول؟</p>
-        <Link href='/login'>اضغط هنا</Link>
+          <p>الرجوع الى صفحة الدخول؟</p>
+          <Link href='/login'>اضغط هنا</Link>
         </div>
       </div>  
     </div>
