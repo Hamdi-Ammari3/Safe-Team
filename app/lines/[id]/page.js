@@ -1,0 +1,516 @@
+"use client";
+
+import React, { useMemo,useState } from "react";
+import { Modal } from "antd";
+import { doc, runTransaction } from "firebase/firestore";
+import { DB } from "../../../firebaseConfig";
+import { useParams, useRouter } from "next/navigation";
+import {useGlobalState} from '../../../globalState';
+import ClipLoader from "react-spinners/ClipLoader";
+import { IoArrowBackCircle } from "react-icons/io5";
+import "../../style.css";
+
+const LineDetails = () => {
+    const { id } = useParams();
+    const router = useRouter();
+    const { lines, drivers, students, loading } = useGlobalState();
+    const line = lines.find((l) => l.id === id);
+
+    const [openDriverModal, setOpenDriverModal] = useState(false);
+    const [selectedDriver, setSelectedDriver] = useState(null);
+    const [searchDriver, setSearchDriver] = useState("");
+    const [loadingAssign, setLoadingAssign] = useState(false);
+    const [openStudentModal, setOpenStudentModal] = useState(false);
+    const [selectedStudents, setSelectedStudents] = useState([]);
+    const [searchStudent, setSearchStudent] = useState("");
+    const [loadingAddStudent, setLoadingAddStudent] = useState(false);
+    const [loadingRemoveDriver, setLoadingRemoveDriver] = useState(false);
+    const [loadingRemoveStudent, setLoadingRemoveStudent] = useState(null);
+
+    // ✅ Get driver
+    const driver = useMemo(() => {
+        if (!line || !drivers) return null;
+        return drivers.find((d) => d.id === line.driver_id);
+    }, [line, drivers]);
+
+    // ✅ Get students of this line
+    const lineStudents = useMemo(() => {
+        if (!students || !line) return [];
+        return students.filter((s) => s.line_id === line.id);
+    }, [students, line]);
+
+    //Filter driver list
+    const filteredDrivers = useMemo(() => {
+        return drivers.filter((d) =>
+            !searchDriver || d.name?.includes(searchDriver)
+        );
+    }, [drivers, searchDriver]);
+
+    //Find available students
+    const availableStudents = useMemo(() => {
+        return students.filter((s) =>
+            s.school_id === line.school_id &&
+            !s.line_id &&
+            (!searchStudent || s.name?.includes(searchStudent))
+        );
+    }, [students, line, searchStudent]);
+
+    //Assign driver
+    const handleAssignDriver = async () => {
+        if (!selectedDriver) {
+            alert("اختر سائق");
+            return;
+        }
+
+        if (line.driver_id) {
+            alert("هذا الخط لديه سائق بالفعل");
+            return;
+        }
+
+        try {
+            setLoadingAssign(true);
+
+            const lineRef = doc(DB, "lines", line.id);
+            const driverRef = doc(DB, "drivers", selectedDriver.id);
+
+            let alreadyAssigned = false;
+
+            await runTransaction(DB, async (transaction) => {
+                const lineDoc = await transaction.get(lineRef);
+
+                if (lineDoc.data()?.driver_id) {
+                    alreadyAssigned = true;
+                    return; // stop transaction cleanly
+                }
+
+                const driverDoc = await transaction.get(driverRef);
+                const driverLines = driverDoc.data()?.lines || [];
+
+                transaction.update(lineRef, {
+                    driver_id: selectedDriver.id,
+                    driver_name: selectedDriver.name,
+                    car_type: selectedDriver.car_type || null,
+                });
+
+                transaction.update(driverRef, {
+                    lines: driverLines.includes(line.id)
+                    ? driverLines
+                    : [...driverLines, line.id],
+                });
+            });
+
+            // ✅ AFTER transaction
+            if (alreadyAssigned) {
+                alert("تم تعيين سائق لهذا الخط مسبقاً");
+                return;
+            }
+
+            alert("تم ربط السائق بالخط ✅");
+
+            setOpenDriverModal(false);
+            setSelectedDriver(null);
+
+        } catch (error) {
+            console.error(error);
+            alert("حدث خطأ أثناء الربط");
+        } finally {
+            setLoadingAssign(false);
+        }
+    };
+
+    //Close assign driver modal
+    const closeDriverModal = () => {
+        setOpenDriverModal(false);
+        setSelectedDriver(null);
+    }
+
+    //Toggle students selections
+    const toggleStudentSelection = (student) => {
+        setSelectedStudents((prev) => {
+            const exists = prev.find((s) => s.id === student.id);
+
+            if (exists) {
+                return prev.filter((s) => s.id !== student.id); // remove
+            } else {
+                return [...prev, student]; // add
+            }
+        });
+    };
+
+    //Add students to a line
+    const handleAddStudent = async () => {
+        if (selectedStudents.length === 0) {
+            alert("اختر طالب واحد على الأقل");
+            return;
+        }
+
+        try {
+            setLoadingAddStudent(true);
+
+            const lineRef = doc(DB, "lines", line.id);
+
+            await runTransaction(DB, async (transaction) => {
+                // ✅ 1. READ line first
+                const lineDoc = await transaction.get(lineRef);
+                const riders = lineDoc.data()?.riders || [];
+
+                let updatedRiders = [...riders];
+
+                // ✅ 2. READ ALL students first
+                const studentDocs = [];
+
+                for (const student of selectedStudents) {
+                    const studentRef = doc(DB, "students", student.id);
+                    const studentDoc = await transaction.get(studentRef);
+
+                    studentDocs.push({
+                        ref: studentRef,
+                        data: studentDoc.data(),
+                        id: student.id
+                    });
+                }
+
+                // ✅ 3. NOW DO WRITES
+                for (const student of studentDocs) {
+                    // skip if already assigned
+                    if (student.data?.line_id) continue;
+
+                    const updateData = {
+                        line_id: line.id,
+                    };
+
+                    // 🔥 handle driver case
+                    if (line.driver_id) {
+                        updateData.driver_id = line.driver_id;
+                    }
+
+                    transaction.update(student.ref, updateData);
+
+                    if (!updatedRiders.includes(student.id)) {
+                        updatedRiders.push(student.id);
+                    }
+                }
+
+                // ✅ 4. update line once
+                transaction.update(lineRef, {
+                    riders: updatedRiders,
+                });
+            });
+
+            alert("تم إضافة الطلاب للخط ✅");
+
+            setSelectedStudents([]);
+            setOpenStudentModal(false);
+
+        } catch (error) {
+            console.error(error);
+            alert("حدث خطأ أثناء الإضافة");
+        } finally {
+            setLoadingAddStudent(false);
+        }
+    };
+
+    //Close students modal
+    const closeStudentsModal = () => {
+        setOpenStudentModal(false);
+        setSelectedStudents([]);
+    }
+
+    //Remove driver from line
+    const handleRemoveDriver = async () => {
+        if (!driver) return;
+
+        if (!confirm("هل تريد إزالة السائق من هذا الخط؟")) return;
+
+        try {
+            setLoadingRemoveDriver(true);
+
+            const lineRef = doc(DB, "lines", line.id);
+            const driverRef = doc(DB, "drivers", driver.id);
+
+            await runTransaction(DB, async (transaction) => {
+                const lineDoc = await transaction.get(lineRef);
+                const driverDoc = await transaction.get(driverRef);
+
+                const riders = lineDoc.data()?.riders || [];
+                const driverLines = driverDoc.data()?.lines || [];
+
+                // ✅ remove line from driver
+                transaction.update(driverRef, {
+                    lines: driverLines.filter((l) => l !== line.id),
+                });
+
+                // ✅ reset line
+                transaction.update(lineRef, {
+                    driver_id: null,
+                    driver_name: null,
+                    car_type: null,
+                });
+
+                // ✅ reset students driver_id
+                for (const studentId of riders) {
+                    const studentRef = doc(DB, "students", studentId);
+                    transaction.update(studentRef, {
+                        driver_id: null,
+                    });
+                }
+            });
+
+            alert("تم إزالة السائق من الخط ✅");
+
+            // refresh page
+            router.refresh();
+
+        } catch (error) {
+            console.error(error);
+            alert("حدث خطأ أثناء إزالة السائق");
+        } finally {
+            setLoadingRemoveDriver(false);
+        }
+    };
+
+    //Remove students from line
+    const handleRemoveStudent = async (student) => {
+        if (!confirm("هل تريد إزالة هذا الطالب من الخط؟")) return;
+
+        try {
+            setLoadingRemoveStudent(student.id);
+
+            const lineRef = doc(DB, "lines", line.id);
+            const studentRef = doc(DB, "students", student.id);
+
+            await runTransaction(DB, async (transaction) => {
+                const lineDoc = await transaction.get(lineRef);
+                const riders = lineDoc.data()?.riders || [];
+
+                // ✅ update student
+                transaction.update(studentRef, {
+                    line_id: null,
+                    driver_id: null,
+                });
+
+                // ✅ update line
+                transaction.update(lineRef, {
+                    riders: riders.filter((id) => id !== student.id),
+                });
+            });
+
+            alert("تم إزالة الطالب من الخط ✅");
+
+            // refresh page
+            router.refresh();
+
+        } catch (error) {
+            console.error(error);
+            alert("حدث خطأ أثناء إزالة الطالب");
+        } finally {
+            setLoadingRemoveStudent(null);
+        }
+    };
+ 
+    if (loading) {
+        return (
+            <div className="loader">
+                <ClipLoader size={40} />
+            </div>
+        );
+    }
+
+    if (!line) {
+        return <div className="empty">الخط غير موجود</div>;
+    }
+
+    return (
+        <div className="line-details-container">
+            <div className="back-btn" onClick={() => router.push("/")}>
+                <IoArrowBackCircle size={26} />
+            </div>
+
+            <div className="line-details-card">
+                <h2>خط: {line.destination}</h2>
+                <p>{line.line_number} {'رقم الخط'}</p>
+            </div>
+
+            <div className="line-section">
+                <div className="section-header">
+                    <h3>معلومات السائق</h3>
+                </div>
+
+                {driver ? (
+                    <div className="driver-box">
+                        {loadingRemoveDriver ? (
+                            <ClipLoader size={12} />
+                        ) : (
+                            <button
+                                className="delete-btn driver-remove-btn"
+                                onClick={handleRemoveDriver}
+                            >
+                             إزالة السائق
+                            </button>
+                        )}
+
+                        {/* DRIVER INFO */}
+                        <div className="driver-info-grid">
+                            <div>
+                                <span>الاسم</span>
+                                <strong>{driver.name}</strong>
+                            </div>
+
+                            <div>
+                                <span>الهاتف</span>
+                                <strong className="phone-number">{driver.phone_number}</strong>
+                            </div>
+
+                            <div>
+                                <span>نوع السيارة</span>
+                                <strong>{driver.car_type}</strong>
+                            </div>
+
+                            <div>
+                                <span>رقم اللوحة</span>
+                                <strong>{driver.car_plate}</strong>
+                            </div>
+                        </div>
+
+                    </div>
+                ) : (
+                    <div className="empty-with-action">
+                        <p style={{color:'gray',fontSize:'15px'}}>لم يتم تعيين سائق لهذا الخط</p>
+                        <div className="create-btn" onClick={() => setOpenDriverModal(true)}>
+                            <p>تعيين سائق</p>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <Modal
+                title="تعيين سائق"
+                open={openDriverModal}
+                onCancel={closeDriverModal}
+                footer={null}
+                centered
+            >
+                <div className="create-school-form">
+                    <input
+                        placeholder="بحث باسم السائق..."
+                        value={searchDriver}
+                        onChange={(e) => setSearchDriver(e.target.value)}
+                    />
+                    <div className="drivers-list">
+                        {filteredDrivers.map((d) => (
+                            <div
+                                key={d.id}
+                                className={`driver-item ${selectedDriver?.id === d.id ? "active" : ""}`}
+                                onClick={() => setSelectedDriver(d)}
+                            >
+                                <p>{d.name}</p>
+                                <span className="phone-number">{d.phone_number}</span>
+                            </div>
+                        ))}
+                    </div>
+                    {loadingAssign ? (
+                        <div className="btn-loading">
+                            <ClipLoader size={15} color="#fff" />
+                        </div>
+                    ) : (
+                        <button
+                            className={`create-submit ${!selectedDriver ? 'disabled-button' : ''}`}
+                            onClick={handleAssignDriver}
+                            disabled={!selectedDriver}
+                        >
+                         ربط
+                        </button>
+                    )}
+                </div>
+            </Modal>
+
+            {/* Students */}
+            <div className="line-section">
+                <div className="section-header">
+                    <h3>الطلاب ({lineStudents.length})</h3>
+                    <div className="create-btn" onClick={() => setOpenStudentModal(true)}>
+                        <p>+ إضافة طلاب</p>
+                    </div>
+                </div>
+
+                {lineStudents.length === 0 ? (
+                    <div className="empty">
+                     لا يوجد طلاب في هذا الخط
+                    </div>
+                ) : (
+                    <div className="line-table">
+                        <div  className="line-table-header line-details-student-list-item">
+                            <span>اسم الطالب</span>
+                            <span>رقم الهاتف</span>
+                            <div></div>
+                        </div>
+
+                        {lineStudents.map((student) => (
+                            <div key={student.id} className="line-table-row line-details-student-list-item">
+                                <span>{student.name} {student.parent_name}</span>
+                                <span className="phone-number">{student.phone_number}</span>
+                                <div style={{textAlign:'center'}}>
+                                    {loadingRemoveStudent === student.id ? (
+                                        <ClipLoader size={12} />
+                                    ) : (
+                                        <button
+                                            className="delete-btn small"
+                                            onClick={() => handleRemoveStudent(student)}
+                                        >
+                                         إزالة
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                <Modal
+                    title="إضافة طالب"
+                    open={openStudentModal}
+                    onCancel={closeStudentsModal}
+                    footer={null}
+                    centered
+                >
+                    <div className="create-school-form">
+                        <input
+                            placeholder="بحث باسم الطالب..."
+                            value={searchStudent}
+                            onChange={(e) => setSearchStudent(e.target.value)}
+                        />
+
+                        <div className="drivers-list">
+                            {availableStudents.map((s) => (
+                                <div
+                                    key={s.id}
+                                    className={`driver-item ${selectedStudents.find((st) => st.id === s.id) ? "active" : ""}`}
+                                    onClick={() => toggleStudentSelection(s)}
+                                >
+                                    <p>{s.name} {s.parent_name}</p>
+                                    <span className="phone-number">{s.phone_number}</span>
+                                </div>
+                            ))}
+                        </div>
+
+                        {loadingAddStudent ? (
+                            <div className="btn-loading">
+                                <ClipLoader size={15} color="#fff" />
+                            </div>
+                        ) : (
+                            <button
+                                className={`create-submit ${!selectedStudents.length > 0 ? 'disabled-button' : ''}`}
+                                onClick={handleAddStudent}
+                                disabled={selectedStudents.length === 0}
+                            >
+                             إضافة ({selectedStudents.length})
+                            </button>
+                        )}
+                    </div>
+                </Modal>
+            </div>
+        </div>
+    );
+};
+
+export default LineDetails;

@@ -7,7 +7,7 @@ import { collection, getDocs, query, where } from "firebase/firestore"
 import { DB } from '../../firebaseConfig'
 import ClipLoader from "react-spinners/ClipLoader"
 import Image from 'next/image'
-import logo_image from '../../images/safe-logo.png'
+import logo_image from '../../images/logo.png'
 
 const Login = () => {
   const [username,setUsername] = useState('')
@@ -30,11 +30,17 @@ const Login = () => {
       );
 
       const querySnapshot = await getDocs(q);
+
       if (!querySnapshot.empty) {
-        const userData = querySnapshot.docs[0].data();        
+        const userData = querySnapshot.docs[0].data();     
+
         localStorage.setItem('adminLoggedIn', true)
         localStorage.setItem('adminDahboardName', userData.dashboard_name)
-        router.push('/')
+
+        setTimeout(() => {
+          router.push("/");
+        }, 300);
+
       } else {
         setError('يرجى التثبت من المعلومات المدرجة')
       }
@@ -46,45 +52,62 @@ const Login = () => {
   };
 
   return (
-    <div className='login-container'>
-      <div className='login-container-box'>
-        <div className='form-title-box'>
+    <div className="login-page">
+      <div className="login-card">
+        <div className="login-logo">
           <Image
             src={logo_image}
-            width={80}
-            height={80}
-            alt='logo image'
-            style={{objectFit:'contain'}}
+            width={70}
+            height={70}
+            alt="logo"
           />
         </div>
-        {error && <p style={{color:'red'}}>{error}</p>}
-        <div className='form-box'>
-          <form className='form'>
-            <input placeholder='اسم المستخدم' value={username} onChange={(e) => setUsername(e.target.value)}/>
-            <input placeholder='كلمة المرور' value={password} onChange={(e) => setPassword(e.target.value)}/>
-            {loading ? (
-              <div style={{ width:'250px',height:'35px',backgroundColor:'#955BFE',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                <ClipLoader
-                  color={'#fff'}
-                  loading={loading}
-                  size={10}
-                  aria-label="Loading Spinner"
-                  data-testid="loader"
-                />
-              </div>
-            ) : (
-              <button onClick={handleLogin}>دخول</button>
-            )}
-            
-          </form>
+
+        <h2 className="login-title">تسجيل الدخول</h2>
+
+        {error && <p className="login-error">{error}</p>}
+
+        <form className="login-form" onSubmit={handleLogin}>
+          <input
+            placeholder="اسم المستخدم"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+
+          <input
+            placeholder="كلمة المرور"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+
+          {loading ? (
+            <div className="login-btn loading">
+              <ClipLoader size={14} color="#fff" />
+            </div>
+          ) : (
+            <button type="submit" className="login-btn">
+             دخول
+            </button>
+          )}
+        </form>
+      </div>
+
+      {loading && (
+        <div className="page-loading-overlay">
+          <ClipLoader size={40} color="#000" />
+          <p>جاري تسجيل الدخول...</p>
         </div>
-        <div className='delete_account_box'>
-          <p>تريد مسح حسابك من على التطبيق؟</p>
-          <Link href='/delete-account'>اضغط هنا</Link>
-        </div>
-      </div>  
+      )}
     </div>
-  )
+  );
 }
 
 export default Login
+
+/*
+        <div className="login-footer">
+          <p>تريد مسح حسابك؟</p>
+          <Link href="/delete-account">اضغط هنا</Link>
+        </div>
+*/

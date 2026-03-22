@@ -1,34 +1,29 @@
-'use client';
-import React, { createContext, useReducer, useEffect } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { DB } from './firebaseConfig';
+"use client";
+
+import React, { createContext, useReducer, useEffect } from "react";
+import { collection, getDocs } from "firebase/firestore";
+import { DB } from "./firebaseConfig";
 
 const GlobalStateContext = createContext();
 
 const initialState = {
-  users:[],
-  riders:[],
-  lines:[],
-  intercityTrips:[],
-  drivers:[],
-  destinations:[],
-  emails:[],
-  privateCarRequests:[],
-  unseenEmailsCount: 0,
-  unseenPrivateCarRequestsCount: 0,
+  students: [],
+  schools: [],
+  drivers: [],
+  lines: [],
   loading: true,
   error: null,
 };
 
-const globalStateReducer = (state, action) => {
+const reducer = (state, action) => {
   switch (action.type) {
-    case 'FETCH_SUCCESS':
+    case "SET_DATA":
       return {
         ...state,
         ...action.payload,
         loading: false,
       };
-    case 'FETCH_ERROR':
+    case "ERROR":
       return {
         ...state,
         error: action.error,
@@ -40,86 +35,61 @@ const globalStateReducer = (state, action) => {
 };
 
 export const GlobalStateProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(globalStateReducer, initialState);
+  const [state, dispatch] = useReducer(reducer, initialState);
 
-  useEffect(() => {    
-    const unsubscribeUsers = onSnapshot(collection(DB, 'users'), (snapshot) => {
-      const users = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      dispatch({
-        type: 'FETCH_SUCCESS',
-        payload: { users },
-      });
-    });
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [studentsSnap, schoolsSnap, driversSnap, linesSnap, teachersSnap, employeesSnap] =
+          await Promise.all([
+            getDocs(collection(DB, "students")),
+            getDocs(collection(DB, "schools")),
+            getDocs(collection(DB, "drivers")),
+            getDocs(collection(DB, "lines")),
+            getDocs(collection(DB, "teachers")),
+            getDocs(collection(DB, "employees")),
+          ]);
 
-    const unsubscribeRiders = onSnapshot(collection(DB, 'riders'), (snapshot) => {
-      const riders = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      dispatch({
-        type: 'FETCH_SUCCESS',
-        payload: { riders },
-      });
-    });
+        const schools = schoolsSnap.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
 
-    const unsubscribeDrivers = onSnapshot(collection(DB, 'drivers'), (snapshot) => {
-      const drivers = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      dispatch({
-        type: 'FETCH_SUCCESS',
-        payload: { drivers },
-      });
-    });
+        const students = studentsSnap.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
 
-    const unsubscribeLines = onSnapshot(collection(DB, 'lines'), (snapshot) => {
-      const lines = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      dispatch({
-        type: 'FETCH_SUCCESS',
-        payload: { lines },
-      });
-    });
+        const teachers = teachersSnap.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
 
-    const unsubscribeTrips = onSnapshot(collection(DB, 'intercityTrips'), (snapshot) => {
-      const intercityTrips = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      dispatch({
-        type: 'FETCH_SUCCESS',
-        payload: { intercityTrips },
-      });
-    });
+        const employees = employeesSnap.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
 
-    const unsubscribeDestinations = onSnapshot(collection(DB, 'institutions'), (snapshot) => {
-      const destinations = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      dispatch({
-        type: 'FETCH_SUCCESS',
-        payload: { destinations },
-      });
-    });
+        const drivers = driversSnap.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
 
-    const unsubscribeEmails = onSnapshot(collection(DB, 'emails'), (snapshot) => {
-      const emails = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      const unseenEmailsCount = emails.filter((email) => !email.seen).length;
-      dispatch({
-        type: 'FETCH_SUCCESS',
-        payload: { emails,unseenEmailsCount },
-      });
-    });
+        const lines = linesSnap.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
 
-    const unsubscribePrivateCarRequests = onSnapshot(collection(DB, 'carRequest'), (snapshot) => {
-      const privateCarRequests = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      const unseenPrivateCarRequestsCount = privateCarRequests.filter((req) => !req.seen).length;
-      dispatch({
-        type: 'FETCH_SUCCESS',
-        payload: { privateCarRequests,unseenPrivateCarRequestsCount },
-      });
-    });
-
-    // Cleanup listeners on unmount
-    return () => {
-      unsubscribeUsers();
-      unsubscribeRiders();
-      unsubscribeDrivers();
-      unsubscribeLines();
-      unsubscribeTrips();
-      unsubscribeDestinations();
-      unsubscribeEmails();
-      unsubscribePrivateCarRequests();
+        dispatch({
+          type: "SET_DATA",
+          payload: { students, schools, drivers, lines, teachers, employees }
+        });
+      } catch (error) {
+        dispatch({ type: "ERROR", error });
+      }
     };
+
+    fetchData();
   }, []);
 
   return (

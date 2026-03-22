@@ -5,7 +5,7 @@ import { addDoc, collection } from "firebase/firestore";
 import { DB } from "../../firebaseConfig";
 import ClipLoader from "react-spinners/ClipLoader"
 import Image from 'next/image'
-import logo_image from '../../images/safe-logo.png'
+import logo_image from '../../images/logo.png'
 
 const DeleteAccountRequest = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
