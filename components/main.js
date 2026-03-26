@@ -14,16 +14,6 @@ const Main = () => {
   const [loggingOut, setLoggingOut] = useState(false);
 
   //Logout
-  const handleLogoutt = () => {
-    localStorage.removeItem("adminLoggedIn"); 
-    localStorage.removeItem("adminDahboardName"); 
-    sessionStorage.clear();
-
-    // redirect
-    router.push("/login");
-  };
-
-  //Logout
   const handleLogout = () => {
     setLoggingOut(true);
 

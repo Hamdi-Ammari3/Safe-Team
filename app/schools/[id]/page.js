@@ -55,23 +55,30 @@ const SchoolDetails = () => {
         return password;
     };
 
-    // 📱 Normalize Iraqi phone
-    const normalizePhone = (phone) => {
+    // 📱 Normalize phone based on country
+    const normalizePhoneByCountry = (phone, country) => {
         let cleaned = phone.replace(/\D/g, "");
 
-        if (cleaned.startsWith("07")) {
-            cleaned = cleaned.slice(1);
+        // 🇮🇶 IRAQ
+        if (country === "iraq") {
+            if (cleaned.startsWith("07")) {
+                cleaned = cleaned.slice(1);
+            }
+
+            if (!cleaned.startsWith("7")) return null;
+            if (cleaned.length !== 10) return null;
+
+            return cleaned;
         }
 
-        if (!cleaned.startsWith("7")) {
-            return null;
+        // 🇹🇳 TUNISIA
+        if (country === "tunisia") {
+            if (cleaned.length !== 8) return null;
+
+            return cleaned;
         }
 
-        if (cleaned.length !== 10) {
-            return null;
-        }
-
-        return cleaned;
+        return null;
     };
 
     //Create new owner doc
@@ -82,9 +89,14 @@ const SchoolDetails = () => {
         }
 
         // ✅ Normalize phone
-        const normalizedPhone = normalizePhone(ownerPhone);
+        const normalizedPhone = normalizePhoneByCountry(ownerPhone, school.country);
+
         if (!normalizedPhone) {
-            alert("رقم الهاتف غير صالح (يجب أن يبدأ بـ 7 ويكون 10 أرقام)");
+            if (school.country === "iraq") {
+                alert("رقم الهاتف غير صالح (يجب أن يبدأ بـ 7 ويكون 10 أرقام)");
+            } else if (school.country === "tunisia") {
+                alert("رقم الهاتف غير صالح (يجب أن يكون 8 أرقام)");
+            }
             return;
         }
 
