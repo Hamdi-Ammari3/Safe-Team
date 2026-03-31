@@ -216,7 +216,8 @@ const SchoolDetails = () => {
                 <div className="school-details-table">
                     <div className="school-details-table-header">
                         <span>الاسم</span>
-                        <span>الهاتف</span>
+                        <span>الهاتف / Username</span>
+                        <span>كلمة المرور</span>
                     </div>
 
                     {groupedEmployees["المشرف العام"]?.length === 0 ? (
@@ -226,6 +227,7 @@ const SchoolDetails = () => {
                             <div key={emp.id} className="school-details-table-row">
                                 <span>{emp.name}</span>
                                 <span className="phone-number">{emp.phone_number}</span>
+                                <span>{emp.password}</span>
                             </div>
                         ))
                     )}
