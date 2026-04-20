@@ -122,7 +122,6 @@ const Schools = () => {
 
       <div className="schools-header">
         <h2>المدارس</h2>
-
         <div className="create-btn" onClick={openCreateModal}>
           <p>+ إنشاء مدرسة</p>
         </div>

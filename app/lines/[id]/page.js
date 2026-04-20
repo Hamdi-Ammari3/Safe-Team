@@ -80,11 +80,13 @@ const LineDetails = () => {
 
                 if (lineDoc.data()?.driver_id) {
                     alreadyAssigned = true;
-                    return; // stop transaction cleanly
+                    return;
                 }
 
                 const driverDoc = await transaction.get(driverRef);
                 const driverLines = driverDoc.data()?.lines || [];
+
+                const riders = lineDoc.data()?.riders || [];
 
                 transaction.update(lineRef, {
                     driver_id: selectedDriver.id,
@@ -97,6 +99,14 @@ const LineDetails = () => {
                     ? driverLines
                     : [...driverLines, line.id],
                 });
+
+                for (const studentId of riders) {
+                    const studentRef = doc(DB, "students", studentId);
+
+                    transaction.update(studentRef, {
+                        driver_id: selectedDriver.id,
+                    });
+                }
             });
 
             // ✅ AFTER transaction
@@ -172,7 +182,6 @@ const LineDetails = () => {
 
                 // ✅ 3. NOW DO WRITES
                 for (const student of studentDocs) {
-                    // skip if already assigned
                     if (student.data?.line_id) continue;
 
                     const updateData = {
@@ -258,7 +267,6 @@ const LineDetails = () => {
 
             alert("تم إزالة السائق من الخط ✅");
 
-            // refresh page
             router.refresh();
 
         } catch (error) {
