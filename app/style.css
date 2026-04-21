@@ -796,6 +796,11 @@
   border-color: #3b82f6;
   background: #f3f0ff;
 }
+.disabled-item {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: auto;
+}
 .line-table-header {
   display: grid;
   grid-template-columns: 1fr 1fr;

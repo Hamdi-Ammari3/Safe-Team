@@ -134,6 +134,11 @@ const LineDetails = () => {
         setSelectedDriver(null);
     }
 
+    //Check student elligibility
+    const isStudentValid = (student) => {
+        return student.linked_parent && student.home_location;
+    };
+
     //Toggle students selections
     const toggleStudentSelection = (student) => {
         setSelectedStudents((prev) => {
@@ -183,6 +188,10 @@ const LineDetails = () => {
                 // ✅ 3. NOW DO WRITES
                 for (const student of studentDocs) {
                     if (student.data?.line_id) continue;
+
+                    if (!student.data?.linked_parent || !student.data?.home_location) {
+                        continue;
+                    }
 
                     const updateData = {
                         line_id: line.id,
@@ -489,16 +498,30 @@ const LineDetails = () => {
                         />
 
                         <div className="drivers-list">
-                            {availableStudents.map((s) => (
-                                <div
-                                    key={s.id}
-                                    className={`driver-item ${selectedStudents.find((st) => st.id === s.id) ? "active" : ""}`}
-                                    onClick={() => toggleStudentSelection(s)}
-                                >
-                                    <p>{s.name} {s.parent_name}</p>
-                                    <span className="phone-number">{s.phone_number}</span>
-                                </div>
-                            ))}
+                            {availableStudents.map((s) => {
+                                const isValid = isStudentValid(s);
+
+                                return (
+                                    <div
+                                        key={s.id}
+                                        className={`driver-item 
+                                            ${selectedStudents.find((st) => st.id === s.id) ? "active" : ""} 
+                                            ${!isValid ? "disabled-item" : ""}
+                                        `}
+                                        onClick={() => {
+                                            if (!isValid) return;
+                                            toggleStudentSelection(s);
+                                        }}
+                                    >
+                                        <p>{s.name} {s.parent_name}</p>
+                                        <span className="phone-number">
+                                            {isValid 
+                                                ? s.phone_number 
+                                                : "غير مرتبط بحساب ولي"}
+                                        </span>
+                                    </div>
+                                );
+                            })}
                         </div>
 
                         {loadingAddStudent ? (
